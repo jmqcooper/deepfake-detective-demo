@@ -1,0 +1,174 @@
+{
+  "app": {
+    "title": "The Deepfake Detective Academy",
+    "hook": "Some of the voices you hear today aren't real.",
+    "start": "Start your training"
+  },
+  "common": {
+    "listen": "Listen",
+    "next": "Next",
+    "real": "REAL",
+    "fake": "FAKE",
+    "skip": "Skip",
+    "loading": "One moment…"
+  },
+  "setup": {
+    "title": "No audio samples yet",
+    "body": "The demo needs a set of audio samples first. Run these commands in the project folder:"
+  },
+  "persona": {
+    "miko": {
+      "name": "Miko the minion",
+      "description": "Miko understands words well, but sometimes falls for a fake voice."
+    },
+    "echo": {
+      "name": "Agent Echo the detective",
+      "description": "Agent Echo hunts for the tiny sound clues that give a fake voice away."
+    }
+  },
+  "brief": {
+    "mission": "Mission {n} of {total}",
+    "start": "Start the mission",
+    "b1": {
+      "title": "Inside the brain of a speech AI",
+      "text": "Hi! I'm Miko. I write down what I hear. Come and see how that works inside my head!"
+    },
+    "b2": {
+      "title": "Real or Fake?",
+      "text": "I'm Agent Echo, deepfake detective. Miko believes everything — I don't. Five voices await your verdict: real or fake?"
+    },
+    "b3": {
+      "title": "The compression machine",
+      "text": "Well done! But out there, phones squash voices flat. Look what that does to my evidence."
+    },
+    "b4": {
+      "title": "The fake-voice factory",
+      "text": "Final mission. A voice you know is easy to believe — crooks abuse that. Now make a fake voice yourself and try to fool Miko."
+    }
+  },
+  "station1": {
+    "name": "Inside the brain of a speech AI",
+    "stage0": {
+      "miko": "Sound is wobbling air! This is how a sentence feels in my ears. Press Listen."
+    },
+    "stage1": {
+      "miko": "I turn the sound into a picture. Low at the bottom, high at the top. Tap the picture to hear a bit again!"
+    },
+    "stage2": {
+      "miko": "Now I hunt for chunks of sound in the picture. I'm never sure — watch me guess!"
+    },
+    "stage3": {
+      "miko": "All the chunks go through my brain: lots of little knobs guessing together. Nobody can see what happens inside. A black box!"
+    },
+    "stage4": {
+      "miko": "And then I glue the chunks together into words. Look, I'm writing along!"
+    },
+    "brainLabel": "The black box",
+    "handoff": "So that's how I hear! But whether a voice is real or fake? I can't tell. That's what Agent Echo is for…",
+    "specLabel": "The sound picture",
+    "noTranscript": "…",
+    "toStation2": "Meet Agent Echo"
+  },
+  "station2": {
+    "name": "Real or Fake?",
+    "caseCounter": "Case {n} of {total}",
+    "echoPrompt": "Listen closely. Is this a real human — or a computer?",
+    "prompt1": "Case one, an easy one. Listen closely: real or fake?",
+    "prompt2": "Case two. Mind the breath, slips and hiss…",
+    "prompt3": "Case three. The fake voices keep getting better…",
+    "prompt4": "Case four. Even real detectives hesitate here.",
+    "prompt5": "The last case. This one nearly fooled ME!",
+    "noReplays": "No listens left",
+    "lookListen": "The sound picture",
+    "scoreKicker": "Your score",
+    "scoreHigh": "Wow, you have detective ears! But out there my job is harder — come and see.",
+    "scoreMid": "Well done! Even real detectives hesitate sometimes. And it gets harder…",
+    "scoreLow": "Tricky, right? Fake voices have become very good. Come and see why…",
+    "toMission3": "To mission 3",
+    "solved": "Solved!",
+    "fooled": "Fooled!",
+    "itWasReal": "This voice was REAL — an ordinary human.",
+    "itWasFake": "This voice was FAKE — made by a computer.",
+    "fooledStat": "{pct}% of visitors fell for this one too!",
+    "evidence": "The evidence",
+    "realExplanation": "A real human. Hear the breath and the little mistakes? Real people are never perfect — that's exactly the proof.",
+    "realExplanationB": "Real! Hear the room echo a little? A real recording never sounds perfectly clean.",
+    "realExplanationC": "A real human. The voice wobbles, hesitates and breathes. A computer forgets to fake that.",
+    "nextCase": "Next case",
+    "toScore": "See your score"
+  },
+  "station3": {
+    "name": "The compression machine",
+    "echoIntro": "Listen! The machine plays the same sentence four times — flatter every time. Watch the top of the picture…",
+    "conclusion": "Agent Echo's conclusion",
+    "echoAfter": "Hear that? You and Miko can still understand the sentence. But my evidence at the top is GONE. That's why crooks love voice messages!",
+    "start": "Switch the machine on",
+    "tryAll": "Listen to all four settings first",
+    "clueZone": "Echo looks for evidence here",
+    "clueZoneGone": "Evidence gone…",
+    "mikoHears": "Miko now hears",
+    "mikoHearsNothing": "…almost nothing any more. The sound is too squashed!"
+  },
+  "codec": {
+    "studio": "Studio",
+    "phone": "Phone call",
+    "whatsapp": "Voice message",
+    "terrible": "Really crackly"
+  },
+  "station4": {
+    "name": "The fake-voice factory",
+    "pickSentence": "What should the fake voice say? Pick a sentence.",
+    "pickVoice": "Whose voice will it be?",
+    "voice1": "Voice 1",
+    "voice2": "Voice 2",
+    "pickHint": "Tap to listen",
+    "send": "Send to Miko",
+    "building": "The fake-voice machine is running…",
+    "sending": "Sending to Miko…",
+    "mikoHeard": "Miko is listening to the message",
+    "mikoVerdict": "Sounds fine to me! Message received.",
+    "askEcho": "Ask Agent Echo",
+    "echoAlert": "ALARM! This voice came out of a computer. I can see it in the picture right away!",
+    "lesson": "Miko understood every word — but he couldn't hear it was fake. That's why you need both: a listener and a detective.",
+    "noTranscript": "…",
+    "scamTip": "Real scammers do this too: they call parents with a fake voice of their child. Not sure? Call back on the real number."
+  },
+  "station5": {
+    "name": "Detective Diploma",
+    "title": "Detective Diploma",
+    "score": "You solved {score} out of {total} cases",
+    "rank": {
+      "rookie": "Rookie",
+      "detective": "Detective",
+      "master": "Master Detective"
+    },
+    "badge1": "Brain-peeker",
+    "badge2": "Fake-spotter",
+    "badge3": "Compression expert",
+    "badge4": "Fake-voice maker",
+    "crowd": "Today: {n} visitors, {avg} correct on average.",
+    "hardest": "The hardest case fooled {pct}% of everyone!",
+    "echoOutro": "Well done, detective! Remember these three things:",
+    "tip1": "Listen for breath and little mistakes. Real people are messy, computers too tidy.",
+    "tip2": "Does a familiar voice ask for money or a secret? Call back on the real number.",
+    "tip3": "Clever people get fooled too. Checking is smart, not silly.",
+    "restart": "Start again"
+  },
+  "clue": {
+    "tier1": "Hear how smooth this voice is? Look in the box: no wobbles, no mistakes. Real voices always tremble a little.",
+    "tier2": "Look in the box: completely empty and silent. No breath, no hiss. A real recording is never this clean.",
+    "tier3": "Almost real! But the stripes in the box run too straight and smooth. Real voices tremble.",
+    "tier4": "Well made — but the box gives it away. Between the words it's TOO quiet.",
+    "tier5": "Even I looked twice! But look in the box: nothing messy, nothing human. Too perfect.",
+    "smoothHarmonics": "Look how smooth and even these stripes are. A real voice always wobbles a little — this is too perfect.",
+    "noBreath": "Where's the breath? People breathe in before they speak. This voice just starts out of nowhere. Suspicious!",
+    "hfCutoff": "Look at the top: the high sounds stop suddenly, like there's a lid on them. The computer forgot the highest tones.",
+    "tooClean": "This one was hard! No lip smacks, no hiss, no room echo. Too clean — that's what gives the computer away."
+  },
+  "voice": {
+    "nl_female": "Woman",
+    "nl_male": "Man",
+    "neutral_female": "Woman",
+    "neutral_male": "Man"
+  }
+}

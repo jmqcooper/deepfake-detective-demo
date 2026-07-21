@@ -1,0 +1,17 @@
+services:
+  web:
+    build:
+      context: ./web
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_PATH: ${DATABASE_PATH:-/app/data/stats.db}
+      STATS_DRIVER: ${STATS_DRIVER:-sqlite}
+      TZ: ${TZ:-Europe/Amsterdam}
+      REPORT_TIMEZONE: ${REPORT_TIMEZONE:-Europe/Amsterdam}
+    volumes:
+      - stats-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  stats-data:

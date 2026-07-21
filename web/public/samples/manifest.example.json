@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-14T10:00:00Z",
+  "source": "Example fixture",
+  "clips": [
+    {
+      "id": "case-01",
+      "label": "fake",
+      "audio": "/samples/audio/case-01.mp3",
+      "durationSec": 4.2,
+      "difficulty": 1,
+      "transcript": "Dit is echte uitvoer van Voxtral ASR.",
+      "spectrogram": {
+        "image": "/samples/spec/case-01.png",
+        "bins": 64,
+        "frames": 168,
+        "maxFreqHz": 8000
+      },
+      "clue": {
+        "key": "clue.smoothHarmonics",
+        "box": [0.42, 0.55, 0.18, 0.3]
+      },
+      "provenance": {
+        "sourceId": "example-fake-01",
+        "attack": "example",
+        "codec": null
+      }
+    },
+    {
+      "id": "case-02",
+      "label": "real",
+      "audio": "/samples/audio/case-02.mp3",
+      "durationSec": 5.1,
+      "difficulty": 2,
+      "transcript": "Ook deze tekst komt rechtstreeks van Voxtral ASR.",
+      "spectrogram": {
+        "image": "/samples/spec/case-02.png",
+        "bins": 64,
+        "frames": 204,
+        "maxFreqHz": 8000
+      },
+      "clue": null,
+      "provenance": {
+        "sourceId": "example-real-01",
+        "attack": null,
+        "codec": null
+      }
+    }
+  ],
+  "codecLadder": [
+    {
+      "id": "studio",
+      "labelKey": "codec.studio",
+      "audio": "/samples/codec/studio.mp3",
+      "spectrogram": "/samples/codec/studio.png",
+      "bitrateKbps": null,
+      "transcript": "Dit is echte uitvoer van Voxtral ASR."
+    },
+    {
+      "id": "phone",
+      "labelKey": "codec.phone",
+      "audio": "/samples/codec/phone.mp3",
+      "spectrogram": "/samples/codec/phone.png",
+      "bitrateKbps": 24,
+      "transcript": "Dit is echte uitvoer van Voxtral ASR."
+    },
+    {
+      "id": "whatsapp",
+      "labelKey": "codec.whatsapp",
+      "audio": "/samples/codec/whatsapp.mp3",
+      "spectrogram": "/samples/codec/whatsapp.png",
+      "bitrateKbps": 12,
+      "transcript": "Dit is echte uitvoer van Voxtral ASR."
+    },
+    {
+      "id": "terrible",
+      "labelKey": "codec.terrible",
+      "audio": "/samples/codec/terrible.mp3",
+      "spectrogram": "/samples/codec/terrible.png",
+      "bitrateKbps": 6,
+      "transcript": "Dit is echte uitvoer van Voxtral ASR."
+    }
+  ],
+  "fakeFactory": {
+    "available": false,
+    "sentences": [
+      { "id": "s1", "textKey": "factory.s1", "scam": false }
+    ],
+    "voices": [
+      { "id": "v1", "nameKey": "voice.v1", "avatar": "/samples/voices/v1.svg" }
+    ],
+    "langs": ["nl", "en"],
+    "audioPattern": "/samples/factory/{sentence}_{voice}_{lang}.mp3"
+  }
+}
