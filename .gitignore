@@ -1,0 +1,18 @@
+# Generated Dutch source pack and static derivatives.
+# Review CC BY attribution and CC BY-NC non-commercial restrictions before release.
+tools/.cache/
+web/public/samples/*
+!web/public/samples/manifest.example.json
+web/public/plan.html
+
+# SQLite stats. Contains visitor guess counters; regenerated on first run.
+data/
+web/data/
+*.db
+*.db-shm
+*.db-wal
+
+# Local Python bytecode
+.venv/
+__pycache__/
+*.py[cod]

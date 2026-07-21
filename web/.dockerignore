@@ -1,0 +1,13 @@
+# Never copy the host's node_modules into the image. better-sqlite3 is a native
+# module: a macOS binding copied over the Linux one built in the dependencies
+# stage produces "invalid ELF header" at runtime, and the app silently falls back
+# to no-stats instead of crashing — so this fails quietly if you get it wrong.
+node_modules
+
+.next
+data
+*.db
+*.db-shm
+*.db-wal
+.env*.local
+npm-debug.log*

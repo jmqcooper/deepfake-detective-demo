@@ -1,0 +1,174 @@
+{
+  "app": {
+    "title": "De Deepfake Detective Academie",
+    "hook": "Sommige stemmen die je hier hoort, bestaan niet echt.",
+    "start": "Start de training"
+  },
+  "common": {
+    "listen": "Luister",
+    "next": "Volgende",
+    "real": "ECHT",
+    "fake": "NEP",
+    "skip": "Overslaan",
+    "loading": "Even geduld…"
+  },
+  "setup": {
+    "title": "Nog geen geluidsfragmenten",
+    "body": "De demo heeft eerst een set audiofragmenten nodig. Draai deze commando's in de map van het project:"
+  },
+  "persona": {
+    "miko": {
+      "name": "Miko de minion",
+      "description": "Miko hoort woorden goed, maar trapt soms in een nepstem."
+    },
+    "echo": {
+      "name": "Agent Echo de detective",
+      "description": "Agent Echo zoekt kleine geluidssporen die een nepstem verraden."
+    }
+  },
+  "brief": {
+    "mission": "Missie {n} van {total}",
+    "start": "Start de missie",
+    "b1": {
+      "title": "In het brein van de spraak-AI",
+      "text": "Hoi! Ik ben Miko. Ik schrijf op wat ik hoor. Kom kijken hoe dat werkt in mijn hoofd!"
+    },
+    "b2": {
+      "title": "Echt of Nep?",
+      "text": "Ik ben Agent Echo, deepfake-detective. Miko gelooft alles — ik niet. Vijf stemmen wachten op jouw oordeel: echt of nep?"
+    },
+    "b3": {
+      "title": "De compressie-machine",
+      "text": "Goed gedaan! Maar buiten drukken telefoons stemmen plat. Kijk wat er dan met mijn bewijs gebeurt."
+    },
+    "b4": {
+      "title": "De nepstem-fabriek",
+      "text": "Laatste missie. Een stem die je kent geloof je snel — daar maken boeven misbruik van. Maak nu zelf een nepstem en probeer Miko te foppen."
+    }
+  },
+  "station1": {
+    "name": "In het brein van de spraak-AI",
+    "stage0": {
+      "miko": "Geluid is trillende lucht! Zo voelt een zin in mijn oren. Druk op Luister."
+    },
+    "stage1": {
+      "miko": "Ik maak van het geluid een plaatje. Laag onderaan, hoog bovenaan. Tik op het plaatje om een stukje te horen!"
+    },
+    "stage2": {
+      "miko": "Nu zoek ik stukjes klank in het plaatje. Ik weet het nooit zeker — kijk maar hoe ik gok!"
+    },
+    "stage3": {
+      "miko": "Alle stukjes gaan door mijn brein: heel veel knopjes die samen raden. Wat daarbinnen gebeurt, kan niemand zien. Een zwart doosje!"
+    },
+    "stage4": {
+      "miko": "En dan plak ik de stukjes aan elkaar tot woorden. Kijk, ik schrijf mee!"
+    },
+    "brainLabel": "Het zwarte doosje",
+    "handoff": "Zo hoor ik dus! Maar of een stem écht is of nep? Dat hoor ik niet. Daar heb je Agent Echo voor…",
+    "specLabel": "Het geluids-plaatje",
+    "noTranscript": "…",
+    "toStation2": "Naar Agent Echo"
+  },
+  "station2": {
+    "name": "Echt of Nep?",
+    "caseCounter": "Zaak {n} van {total}",
+    "echoPrompt": "Luister goed. Is dit een écht mens — of een computer?",
+    "prompt1": "Zaak één, een makkie. Luister goed: echt of nep?",
+    "prompt2": "Zaak twee. Let op adem, foutjes en ruis…",
+    "prompt3": "Zaak drie. De nepstemmen worden steeds beter…",
+    "prompt4": "Zaak vier. Hier twijfelen zelfs echte detectives.",
+    "prompt5": "De laatste zaak. Deze had míj bijna gefopt!",
+    "noReplays": "Geen luisterbeurten meer",
+    "lookListen": "Het geluids-plaatje",
+    "scoreKicker": "Jouw score",
+    "scoreHigh": "Wauw, jij hebt detective-oren! Maar buiten is mijn werk moeilijker — kijk maar.",
+    "scoreMid": "Goed gedaan! Zelfs echte detectives twijfelen soms. En het wordt nog moeilijker…",
+    "scoreLow": "Lastig hè? Nepstemmen zijn heel goed geworden. Kijk maar waarom…",
+    "toMission3": "Naar missie 3",
+    "solved": "Opgelost!",
+    "fooled": "Gefopt!",
+    "itWasReal": "Deze stem was ECHT — een gewoon mens.",
+    "itWasFake": "Deze stem was NEP — gemaakt door een computer.",
+    "fooledStat": "{pct}% van de bezoekers trapte hier ook in!",
+    "evidence": "Het bewijs",
+    "realExplanation": "Een écht mens. Hoor je de adem en de foutjes? Echte mensen zijn nooit perfect — dat is juist het bewijs.",
+    "realExplanationB": "Echt! Hoor je de kamer een beetje galmen? Een echte opname is nooit helemaal schoon.",
+    "realExplanationC": "Een écht mens. De stem wiebelt, twijfelt en haalt adem. Dat vergeet een computer na te maken.",
+    "nextCase": "Volgende zaak",
+    "toScore": "Bekijk je score"
+  },
+  "station3": {
+    "name": "De compressie-machine",
+    "echoIntro": "Luister! De machine speelt dezelfde zin vier keer — elke keer platter. Let op de bovenkant van het plaatje…",
+    "conclusion": "Conclusie van Agent Echo",
+    "echoAfter": "Hoor je? Jij en Miko verstaan de zin nog steeds. Maar mijn bewijs bovenin is wég. Daarom sturen boeven nepstemmen het liefst als spraakbericht!",
+    "start": "Zet de machine aan",
+    "tryAll": "Luister eerst alle vier de standen",
+    "clueZone": "Hier zoekt Echo naar bewijs",
+    "clueZoneGone": "Bewijs weg…",
+    "mikoHears": "Miko hoort nu",
+    "mikoHearsNothing": "…bijna niets meer. Het geluid is te plat!"
+  },
+  "codec": {
+    "studio": "Studio",
+    "phone": "Telefoon",
+    "whatsapp": "Spraakbericht",
+    "terrible": "Heel krakerig"
+  },
+  "station4": {
+    "name": "De nepstem-fabriek",
+    "pickSentence": "Wat moet de nepstem zeggen? Kies een zin.",
+    "pickVoice": "Wiens stem wordt het?",
+    "voice1": "Stem 1",
+    "voice2": "Stem 2",
+    "pickHint": "Tik om te luisteren",
+    "send": "Stuur naar Miko",
+    "building": "De nepstem-machine draait…",
+    "sending": "Versturen naar Miko…",
+    "mikoHeard": "Miko luistert naar het bericht",
+    "mikoVerdict": "Klinkt prima! Bericht ontvangen.",
+    "askEcho": "Vraag het aan Agent Echo",
+    "echoAlert": "ALARM! Deze stem komt uit een computer. Ik zie het meteen in het plaatje!",
+    "lesson": "Miko verstond elk woord — maar hij hoorde niet dat het nep was. Daarom heb je allebei nodig: een luisteraar én een detective.",
+    "noTranscript": "…",
+    "scamTip": "Echte oplichters doen dit ook: ze bellen ouders met de nepstem van hun kind. Niet zeker? Bel terug op het échte nummer."
+  },
+  "station5": {
+    "name": "Detective Diploma",
+    "title": "Detective Diploma",
+    "score": "Je hebt {score} van de {total} zaken opgelost",
+    "rank": {
+      "rookie": "Speurneus",
+      "detective": "Detective",
+      "master": "Meester-detective"
+    },
+    "badge1": "Brein-kijker",
+    "badge2": "Nep-speurder",
+    "badge3": "Compressie-kenner",
+    "badge4": "Nepstem-maker",
+    "crowd": "Vandaag: {n} bezoekers, gemiddeld {avg} goed.",
+    "hardest": "De moeilijkste zaak fopte {pct}% van iedereen!",
+    "echoOutro": "Goed gedaan, detective! Onthoud deze drie dingen:",
+    "tip1": "Luister naar adem en foutjes. Echte mensen zijn rommelig, computers té netjes.",
+    "tip2": "Vraagt een bekende stem om geld of een geheim? Bel terug op het échte nummer.",
+    "tip3": "Ook slimme mensen trappen erin. Even checken is slim, niet dom.",
+    "restart": "Opnieuw beginnen"
+  },
+  "clue": {
+    "tier1": "Hoor je hoe glad deze stem is? Kijk in het kader: geen wiebels, geen foutjes. Echte stemmen trillen altijd een beetje.",
+    "tier2": "Kijk in het kader: helemaal leeg en stil. Geen adem, geen ruis. Een echte opname is nooit zo schoon.",
+    "tier3": "Bijna echt! Maar de strepen in het kader lopen te strak en glad. Echte stemmen trillen.",
+    "tier4": "Goed gemaakt — maar het kader verraadt hem. Tussen de woorden is het té stil.",
+    "tier5": "Zelfs ik keek twee keer! Maar kijk in het kader: niets rommeligs, niets menselijks. Té perfect.",
+    "smoothHarmonics": "Kijk hoe glad en gelijkmatig deze strepen zijn. Een echte stem trilt en wiebelt altijd een beetje — dit is té perfect.",
+    "noBreath": "Waar is de adem? Voordat een mens praat, haalt hij adem. Deze stem begint zomaar ineens. Verdacht!",
+    "hfCutoff": "Kijk bovenin: het hoge geluid stopt plotseling, alsof er een deksel op zit. De computer vergat de hoogste tonen.",
+    "tooClean": "Deze was moeilijk! Geen gesmak, geen ruis, geen echo van de kamer. Té schoon — dat verraadt de computer."
+  },
+  "voice": {
+    "nl_female": "Vrouw",
+    "nl_male": "Man",
+    "neutral_female": "Vrouw",
+    "neutral_male": "Man"
+  }
+}

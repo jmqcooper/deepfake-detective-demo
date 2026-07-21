@@ -1,0 +1,235 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   Deepfake Detective Academy — forensic lab, after hours.
+   Miko (the listener) is warm amber. Echo (the analyst) is cold teal.
+   Evidence is amber. Verdicts are green/red. Nothing is coloured decoratively.
+   ========================================================================= */
+
+@theme {
+  /* Surfaces: a near-black navy that lets the spectrogram's magma palette sing */
+  --color-ink-950: #05070f;
+  --color-ink-900: #0a0e1c;
+  --color-ink-850: #0f1526;
+  --color-ink-800: #151d33;
+  --color-ink-700: #1e2842;
+  --color-ink-600: #2b3855;
+  --color-ink-500: #43537a;
+  --color-ink-400: #6b7ba3;
+
+  /* Miko — the ASR. Warm, eager, a little naive. */
+  --color-miko-300: #ffd98a;
+  --color-miko-400: #ffc45c;
+  --color-miko-500: #f5a623;
+  --color-miko-600: #d4860c;
+
+  /* Echo — the detective. Cool, analytical. */
+  --color-echo-300: #7ff0e4;
+  --color-echo-400: #35d6c7;
+  --color-echo-500: #14b3a6;
+  --color-echo-600: #0c8a80;
+
+  /* Verdicts */
+  --color-real-400: #5ee9a8;
+  --color-real-500: #22c98a;
+  --color-real-600: #12a06c;
+  --color-fake-400: #ff8098;
+  --color-fake-500: #ff4d6d;
+  --color-fake-600: #d92a4d;
+
+  --font-display: var(--font-bricolage), ui-rounded, system-ui, sans-serif;
+  --font-sans: var(--font-nunito), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, monospace;
+
+  /* One easing vocabulary. `out` for entrances, `spring` for anything tactile. */
+  --ease-out-soft: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(110% 80% at 50% -10%, #17224a 0%, transparent 55%),
+    radial-gradient(80% 60% at 90% 110%, #0b3b47 0%, transparent 50%),
+    var(--color-ink-950);
+  color: #eaf0ff;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Kiosk: curious fingers must not select text or pull-to-refresh. */
+  -webkit-user-select: none;
+  user-select: none;
+  overscroll-behavior: none;
+  text-wrap: pretty;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  text-wrap: balance;
+  letter-spacing: -0.02em;
+}
+
+/* Any number that ticks must not reflow the layout around it. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- motion --- */
+
+/* Entrances are split and staggered, never one big container pop. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 0.5s var(--ease-out-soft) both;
+}
+
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.pop {
+  animation: pop 0.42s var(--ease-spring) both;
+}
+
+/* The verdict stamp. Heavy, fast, lands once — this is the emotional beat. */
+@keyframes stamp {
+  0% {
+    opacity: 0;
+    transform: scale(2.4) rotate(-14deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(0.93) rotate(-5deg);
+  }
+  75% {
+    transform: scale(1.03) rotate(-5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-5deg);
+  }
+}
+.stamp {
+  animation: stamp 0.55s var(--ease-out-soft) both;
+}
+
+/* Echo scanning the evidence: a single sweep across the spectrogram. */
+@keyframes scan {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(110%);
+  }
+}
+.scan {
+  animation: scan 1.5s var(--ease-out-soft) 1 both;
+}
+
+/* The clue border breathes. Opacity is untouched so the spotlight mask holds. */
+@keyframes clue {
+  0%,
+  100% {
+    border-color: var(--color-miko-400);
+    box-shadow:
+      0 0 0 9999px rgba(5, 7, 15, 0.74),
+      0 0 22px 2px rgba(255, 196, 92, 0.55);
+  }
+  50% {
+    border-color: #fff;
+    box-shadow:
+      0 0 0 9999px rgba(5, 7, 15, 0.74),
+      0 0 34px 6px rgba(255, 196, 92, 0.85);
+  }
+}
+.clue {
+  animation: clue 1.6s ease-in-out infinite;
+}
+
+/* Miko's idle breathing — slow enough to read as alive, not as a bouncing GIF. */
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.015);
+  }
+}
+.breathe {
+  animation: breathe 4.5s ease-in-out infinite;
+}
+
+/* The attract-mode call to action: a ring that expands and fades out.
+   `outline` rather than `box-shadow` — a spreading shadow under a light button on
+   a dark ground reads as a muddy blob rather than a halo. */
+@keyframes halo {
+  0% {
+    outline-color: rgba(255, 196, 92, 0.55);
+    outline-offset: 0;
+  }
+  100% {
+    outline-color: rgba(255, 196, 92, 0);
+    outline-offset: 22px;
+  }
+}
+.halo {
+  outline: 2px solid transparent;
+  animation: halo 2.2s var(--ease-out-soft) infinite;
+}
+
+/* Station 1's black box: one calm activation pulse per layer, left to right. */
+@keyframes nodepulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Audio playing: bars that actually respond to nothing but still read as sound. */
+@keyframes bar {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

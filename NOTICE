@@ -1,0 +1,23 @@
+Deepfake Detective Academy
+Copyright 2026 Mike Cooper / University of Amsterdam (INDEEP project)
+
+Software code is licensed under the Apache License, Version 2.0.
+
+Real-speech samples come from two sources. The current v2 case packs use
+Common Voice clips, released under Creative Commons Zero (CC0, public domain).
+The fallback inputs use Multilingual LibriSpeech (Dutch), licensed under
+Creative Commons Attribution 4.0 International (CC BY 4.0); attribution:
+Vineel Pratap et al., “MLS: A Large-Scale Multilingual Dataset for Speech
+Research” (2020).
+
+Synthetic-speech samples are generated with mistralai/Voxtral-4B-TTS-2603.
+Its model weights are licensed under Creative Commons
+Attribution-NonCommercial 4.0 International (CC BY-NC 4.0). This component is
+NON-COMMERCIAL and is the one component of this project that is not fully open.
+The restriction blocks commercial use unless this component is removed,
+replaced, or separately licensed; verify the licence covers your intended use
+before publishing.
+
+Transcripts are produced by mistralai/Voxtral-Mini-4B-Realtime-2602, whose
+model is licensed under the Apache License, Version 2.0. Transcripts preserve
+the recognizer's actual output, including mistakes.

@@ -1,0 +1,52 @@
+# Shortcuts for the tested local setup. See README.md.
+.PHONY: install samples dev check docker
+
+SAMPLES := web/public/samples/manifest.json
+PYTHON ?= python3.12
+VENV_PYTHON := .venv/bin/python
+VENV_DEPS := .venv/.deps
+# A stamp inside the gitignored samples dir tracks the *generated dev fixture*.
+# Editing the fixture generator, the pack builder, or the pinned deps invalidates
+# it, so make regenerates the fixture; an untouched tree stays fast.
+STAMP := web/public/samples/.dev-fixture
+SAMPLE_SOURCES := tools/make_synthetic_dutch_fixture.py tools/prepare_samples.py
+
+install: web/node_modules $(VENV_DEPS)
+
+web/node_modules:
+	cd web && npm ci
+
+$(VENV_PYTHON):
+	$(PYTHON) -m venv .venv
+
+$(VENV_DEPS): tools/requirements.txt | $(VENV_PYTHON)
+	$(VENV_PYTHON) -m pip install -r tools/requirements.txt
+	touch $(VENV_DEPS)
+
+# Ensure a sample pack exists, without ever clobbering a real one: if a manifest
+# is present and it is not the synthetic fixture, it is a production pack a
+# contributor built — leave it untouched. Otherwise (re)build the dev fixture.
+samples:
+	@if [ -f "$(SAMPLES)" ] && ! grep -q '"source":[[:space:]]*"Synthetic Dutch integrity fixture' "$(SAMPLES)"; then \
+		echo "Keeping existing production sample pack (web/public/samples/); not regenerating the dev fixture."; \
+	else \
+		$(MAKE) $(STAMP); \
+	fi
+
+# Build the local development fixture (tones + silence, not exhibit-quality).
+$(STAMP): $(SAMPLE_SOURCES) $(VENV_DEPS)
+	$(VENV_PYTHON) tools/make_synthetic_dutch_fixture.py --out tools/.cache/fixture
+	$(VENV_PYTHON) tools/prepare_samples.py --cache tools/.cache/fixture --out web/public/samples
+	$(VENV_PYTHON) tools/prepare_samples.py --out web/public/samples --verify-only
+	touch $(STAMP)
+
+dev: web/node_modules samples
+	cd web && npm run dev
+
+check: web/node_modules samples
+	cd web && npm run lint
+	cd web && npm run build
+	$(VENV_PYTHON) tools/prepare_samples.py --out web/public/samples --verify-only
+
+docker: samples
+	docker compose up -d --build
