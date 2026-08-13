@@ -1,5 +1,5 @@
 # Shortcuts for the tested local setup. See README.md.
-.PHONY: install samples dev check docker
+.PHONY: install samples dev test check check-runtime release-check docker docker-check
 
 SAMPLES := web/public/samples/manifest.json
 PYTHON ?= python3.12
@@ -19,8 +19,8 @@ web/node_modules:
 $(VENV_PYTHON):
 	$(PYTHON) -m venv .venv
 
-$(VENV_DEPS): tools/requirements.txt | $(VENV_PYTHON)
-	$(VENV_PYTHON) -m pip install -r tools/requirements.txt
+$(VENV_DEPS): tools/requirements.in tools/requirements.txt | $(VENV_PYTHON)
+	$(VENV_PYTHON) -m pip install --require-hashes -r tools/requirements.txt
 	touch $(VENV_DEPS)
 
 # Ensure a sample pack exists, without ever clobbering a real one: if a manifest
@@ -43,10 +43,24 @@ $(STAMP): $(SAMPLE_SOURCES) $(VENV_DEPS)
 dev: web/node_modules samples
 	cd web && npm run dev
 
-check: web/node_modules samples
-	cd web && npm run lint
-	cd web && npm run build
+check-runtime: web/node_modules
+	node tools/check_runtime.mjs
+
+test: web/node_modules $(VENV_DEPS)
+	$(VENV_PYTHON) -m unittest discover -s tools/tests -v
+	cd web && npm test
+
+release-check: $(VENV_DEPS) samples
 	$(VENV_PYTHON) tools/prepare_samples.py --out web/public/samples --verify-only
 
-docker: samples
+check: install samples check-runtime
+	$(VENV_PYTHON) -m unittest discover -s tools/tests -v
+	cd web && npm run check
+	$(VENV_PYTHON) tools/prepare_samples.py --out web/public/samples --verify-only
+	tools/run_e2e.sh
+
+docker:
 	docker compose up -d --build
+
+docker-check:
+	tools/test_docker.sh

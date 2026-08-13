@@ -1,7 +1,10 @@
 services:
   web:
     build:
-      context: ./web
+      context: .
+      dockerfile: web/Dockerfile
+      args:
+        FORCE_SYNTHETIC_SAMPLES: ${FORCE_SYNTHETIC_SAMPLES:-0}
     ports:
       - "3000:3000"
     environment:
@@ -9,9 +12,12 @@ services:
       STATS_DRIVER: ${STATS_DRIVER:-sqlite}
       TZ: ${TZ:-Europe/Amsterdam}
       REPORT_TIMEZONE: ${REPORT_TIMEZONE:-Europe/Amsterdam}
+      STATS_RETENTION_DAYS: ${STATS_RETENTION_DAYS:-90}
     volumes:
       - stats-data:/app/data
+      - stats-backups:/app/backups
     restart: unless-stopped
 
 volumes:
   stats-data:
+  stats-backups:

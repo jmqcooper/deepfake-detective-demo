@@ -1,56 +1,51 @@
-import { z } from "zod";
-
-import {
-  isStatsDriverAvailable,
-  recordEvent,
-} from "@/lib/stats";
+import { handleEvent, readBoundedJson } from "@/lib/events";
+import { globalLimiter, perSessionLimiter } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const commonFields = {
-  sessionId: z.uuidv4(),
-  station: z.number().int().min(1).max(5),
-  lang: z.enum(["nl", "en"]),
-};
+/**
+ * The limiter key is the anonymous session id from the body, never a client
+ * address — "no personal data is stored" has to survive the rate limiter too.
+ * Reading it needs the parsed body, so the global bucket goes first and the
+ * per-session bucket goes after parsing.
+ */
+function sessionIdOf(body: unknown): string | null {
+  if (typeof body !== "object" || body === null) return null;
+  const value = (body as { sessionId?: unknown }).sessionId;
+  return typeof value === "string" ? value : null;
+}
 
-const eventSchema = z.discriminatedUnion("type", [
-  z.object({ ...commonFields, type: z.literal("station_enter") }).strict(),
-  z.object({ ...commonFields, type: z.literal("station_complete") }).strict(),
-  z
-    .object({
-      ...commonFields,
-      type: z.literal("guess"),
-      clipId: z.string().min(1),
-      guess: z.enum(["real", "fake"]),
-      correct: z.boolean(),
-    })
-    .strict(),
-  z
-    .object({
-      ...commonFields,
-      type: z.literal("session_complete"),
-      score: z.number().int().min(0).max(5),
-    })
-    .strict(),
-]);
+function tooManyRequests(retryAfterSec: number): Response {
+  return Response.json(
+    { error: "rate_limited", retryAfterSec },
+    { status: 429, headers: { "Retry-After": String(retryAfterSec) } },
+  );
+}
 
 export async function POST(request: Request): Promise<Response> {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  const now = Date.now();
+
+  const globalDecision = globalLimiter.check("all", now);
+  if (!globalDecision.allowed) {
+    return tooManyRequests(globalDecision.retryAfterSec);
   }
 
-  const parsed = eventSchema.safeParse(body);
-  if (!parsed.success) {
-    return Response.json(
-      { error: "Invalid event", issues: z.flattenError(parsed.error).fieldErrors },
-      { status: 400 },
-    );
+  const body = await readBoundedJson(request);
+  if (!body.ok) {
+    return Response.json(body.error, {
+      status: body.error.error === "body_too_large" ? 413 : 400,
+    });
   }
 
-  recordEvent(parsed.data);
-  return new Response(null, { status: isStatsDriverAvailable() ? 204 : 202 });
+  const sessionId = sessionIdOf(body.value);
+  if (sessionId) {
+    const decision = perSessionLimiter.check(sessionId, now);
+    if (!decision.allowed) {
+      return tooManyRequests(decision.retryAfterSec);
+    }
+  }
+
+  const result = await handleEvent(body.value);
+  return Response.json(result.body, { status: result.status });
 }

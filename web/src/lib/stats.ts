@@ -1,21 +1,34 @@
 import { getDatabase, markDatabaseUnavailable } from "@/lib/db";
 import type { SqliteDatabase } from "@/lib/db";
+import type { Lang } from "@/lib/manifest-schema";
 
 interface CommonDemoEvent {
   sessionId: string;
   station: number;
-  lang: "nl" | "en";
+  lang: Lang;
 }
 
+/**
+ * What the store holds. Note what is NOT in here: no clip audio, no transcript,
+ * no IP, no user agent, no cookie, no persistent device id. `sessionId` is a
+ * random UUID minted in memory and dropped on reset — it exists only to stop
+ * one visitor's repeated guess from counting twice.
+ *
+ * `correct` and `score` are derived server-side before an event reaches this
+ * module. The browser never asserts either one.
+ */
 export type DemoEvent =
-  | (CommonDemoEvent & { type: "station_enter" | "station_complete" })
+  | (CommonDemoEvent & {
+      type: "station_enter" | "station_complete" | "station_skip" | "session_reset";
+    })
   | (CommonDemoEvent & {
       type: "guess";
       clipId: string;
       guess: "real" | "fake";
       correct: boolean;
     })
-  | (CommonDemoEvent & { type: "session_complete"; score: number });
+  | (CommonDemoEvent & { type: "session_complete"; score: number })
+  | (CommonDemoEvent & { type: "final_scenario"; choice: string; correct: boolean });
 
 export interface ClipStats {
   clipId: string;
@@ -27,14 +40,60 @@ export interface SummaryStats {
   sessionsToday: number;
   avgScore: number | null;
   hardestClip: { clipId: string; fooledPct: number } | null;
+  /** Share of visitors who chose "call back on a number you already have". */
+  verifyFirstPct: number | null;
 }
 
-interface StatsDriver {
+export type StatsDriverName = "memory" | "sqlite" | "none";
+
+export interface StatsDriver {
+  readonly name: StatsDriverName;
   recordEvent(event: DemoEvent): void;
   getClipStats(clipId: string): ClipStats;
   getSummary(): SummaryStats;
   isAvailable(): boolean;
 }
+
+/** Below this many guesses a percentage is noise, so the UI hides it. */
+export const MIN_GUESSES_FOR_PERCENTAGE = 10;
+
+/* --------------------------------------------------------------- retention */
+
+/**
+ * Bounded on both axes. A kiosk that runs for two years unattended must not
+ * grow a database nobody prunes, and the memory driver must not become the
+ * process's largest object.
+ */
+export const RETENTION_DAYS = clampInt(process.env.STATS_RETENTION_DAYS, 90, 1, 3650);
+export const MAX_EVENT_ROWS = clampInt(process.env.STATS_MAX_ROWS, 500_000, 1_000, 10_000_000);
+export const MAX_MEMORY_EVENTS = clampInt(
+  process.env.STATS_MAX_MEMORY_EVENTS,
+  50_000,
+  100,
+  1_000_000,
+);
+const PRUNE_INTERVAL_MS = 30 * 60 * 1000;
+
+function clampInt(raw: string | undefined, fallback: number, min: number, max: number): number {
+  const parsed = Number.parseInt(raw ?? "", 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
+}
+
+export function retentionCutoff(now: Date, days = RETENTION_DAYS): Date {
+  return new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+}
+
+export function shouldPrune(lastPruneAt: number | null, now: number): boolean {
+  return lastPruneAt === null || now - lastPruneAt >= PRUNE_INTERVAL_MS;
+}
+
+/** Keeps the newest `max` items, dropping from the front. */
+export function trimToCap<T>(items: T[], max: number): T[] {
+  return items.length <= max ? items : items.slice(items.length - max);
+}
+
+/* ------------------------------------------------------------------ shared */
 
 interface ClipAggregateRow {
   guesses: number;
@@ -51,16 +110,21 @@ interface HardestClipRow {
   fooledPct: number;
 }
 
+interface ScenarioRow {
+  answers: number;
+  verified: number | null;
+}
+
 function emptyClipStats(clipId: string): ClipStats {
   return { clipId, guesses: 0, fooledPct: null };
 }
 
 function emptySummary(): SummaryStats {
-  return { sessionsToday: 0, avgScore: null, hardestClip: null };
+  return { sessionsToday: 0, avgScore: null, hardestClip: null, verifyFirstPct: null };
 }
 
-function roundedPercentage(wrong: number, total: number): number {
-  return Math.round((wrong / total) * 100);
+function roundedPercentage(part: number, total: number): number {
+  return Math.round((part / total) * 100);
 }
 
 const DEFAULT_REPORT_TIMEZONE = "Europe/Amsterdam";
@@ -150,7 +214,11 @@ function sqliteTimestamp(date: Date): string {
   return date.toISOString().slice(0, 19).replace("T", " ");
 }
 
+/* ----------------------------------------------------------------- drivers */
+
 class UnavailableDriver implements StatsDriver {
+  readonly name: StatsDriverName = "none";
+
   recordEvent(): void {}
 
   getClipStats(clipId: string): ClipStats {
@@ -167,7 +235,9 @@ class UnavailableDriver implements StatsDriver {
 }
 
 class SqliteDriver implements StatsDriver {
+  readonly name: StatsDriverName = "sqlite";
   private database: SqliteDatabase | null;
+  private lastPruneAt: number | null = null;
 
   constructor(database: SqliteDatabase) {
     this.database = database;
@@ -178,29 +248,40 @@ class SqliteDriver implements StatsDriver {
     markDatabaseUnavailable(error);
   }
 
+  /** Age-based first, then a hard row cap as a backstop. Cheap and infrequent. */
+  private prune(): void {
+    const database = this.database;
+    if (!database) return;
+    const now = Date.now();
+    if (!shouldPrune(this.lastPruneAt, now)) return;
+    this.lastPruneAt = now;
+    try {
+      database
+        .prepare("DELETE FROM events WHERE ts < ?")
+        .run(sqliteTimestamp(retentionCutoff(new Date(now))));
+      database
+        .prepare(
+          `DELETE FROM events WHERE id <= (
+             SELECT id FROM events ORDER BY id DESC LIMIT 1 OFFSET ?
+           )`,
+        )
+        .run(MAX_EVENT_ROWS);
+    } catch (error: unknown) {
+      this.fail(error);
+    }
+  }
+
   recordEvent(event: DemoEvent): void {
     if (!this.database) {
       return;
     }
 
     try {
-      if (event.type === "guess" && event.clipId) {
-        const existing = this.database
-          .prepare(
-            `SELECT 1 FROM events
-             WHERE type = 'guess' AND session_id = ? AND clip_id = ? LIMIT 1`,
-          )
-          .get(event.sessionId, event.clipId);
-        if (existing) {
-          return;
-        }
-      }
-
       this.database
         .prepare(
-          `INSERT INTO events
-            (session_id, station, type, clip_id, guess, correct, score, lang)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT OR IGNORE INTO events
+            (session_id, station, type, clip_id, guess, correct, score, choice, lang)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           event.sessionId,
@@ -208,13 +289,18 @@ class SqliteDriver implements StatsDriver {
           event.type,
           event.type === "guess" ? event.clipId : null,
           event.type === "guess" ? event.guess : null,
-          event.type === "guess" ? Number(event.correct) : null,
+          event.type === "guess" || event.type === "final_scenario"
+            ? Number(event.correct)
+            : null,
           event.type === "session_complete" ? event.score : null,
+          event.type === "final_scenario" ? event.choice : null,
           event.lang,
         );
     } catch (error: unknown) {
       this.fail(error);
+      return;
     }
+    this.prune();
   }
 
   getClipStats(clipId: string): ClipStats {
@@ -235,7 +321,10 @@ class SqliteDriver implements StatsDriver {
       return {
         clipId,
         guesses,
-        fooledPct: guesses < 10 ? null : roundedPercentage(row.wrong ?? 0, guesses),
+        fooledPct:
+          guesses < MIN_GUESSES_FOR_PERCENTAGE
+            ? null
+            : roundedPercentage(row.wrong ?? 0, guesses),
       };
     } catch (error: unknown) {
       this.fail(error);
@@ -270,16 +359,29 @@ class SqliteDriver implements StatsDriver {
            FROM events
            WHERE type = 'guess' AND clip_id IS NOT NULL AND correct IN (0, 1)
            GROUP BY clip_id
-           HAVING COUNT(*) >= 10
+           HAVING COUNT(*) >= ?
            ORDER BY fooledPct DESC, clip_id ASC
            LIMIT 1`,
         )
-        .get() as HardestClipRow | undefined;
+        .get(MIN_GUESSES_FOR_PERCENTAGE) as HardestClipRow | undefined;
+      const scenario = this.database
+        .prepare(
+          `SELECT COUNT(*) AS answers,
+                  SUM(CASE WHEN correct = 1 THEN 1 ELSE 0 END) AS verified
+           FROM events
+           WHERE type = 'final_scenario' AND correct IN (0, 1)`,
+        )
+        .get() as ScenarioRow;
 
       return {
         sessionsToday: sessions.sessionsToday,
-        avgScore: sessions.avgScore === null ? null : Math.round(sessions.avgScore * 10) / 10,
+        avgScore:
+          sessions.avgScore === null ? null : Math.round(sessions.avgScore * 10) / 10,
         hardestClip: hardest ?? null,
+        verifyFirstPct:
+          scenario.answers < MIN_GUESSES_FOR_PERCENTAGE
+            ? null
+            : roundedPercentage(scenario.verified ?? 0, scenario.answers),
       };
     } catch (error: unknown) {
       this.fail(error);
@@ -295,21 +397,28 @@ class SqliteDriver implements StatsDriver {
 type MemoryEvent = DemoEvent & { recordedAt: Date };
 type MemoryGuessEvent = Extract<MemoryEvent, { type: "guess" }>;
 type MemorySessionCompleteEvent = Extract<MemoryEvent, { type: "session_complete" }>;
+type MemoryScenarioEvent = Extract<MemoryEvent, { type: "final_scenario" }>;
 
 class MemoryDriver implements StatsDriver {
-  private readonly events: MemoryEvent[] = [];
-  private readonly guesses = new Map<string, MemoryGuessEvent>();
+  readonly name: StatsDriverName = "memory";
+  private events: MemoryEvent[] = [];
+  private guesses = new Map<string, MemoryGuessEvent>();
 
   recordEvent(event: DemoEvent): void {
-    const stored = { ...event, recordedAt: new Date() };
-    if (event.type === "guess" && event.clipId) {
-      const key = `${event.sessionId}\u0000${event.clipId}`;
+    const stored = { ...event, recordedAt: new Date() } as MemoryEvent;
+    if (event.type === "guess") {
+      const key = `${event.sessionId} ${event.clipId}`;
       if (this.guesses.has(key)) {
         return;
       }
       this.guesses.set(key, stored as MemoryGuessEvent);
+      if (this.guesses.size > MAX_MEMORY_EVENTS) {
+        const oldest = this.guesses.keys().next();
+        if (!oldest.done) this.guesses.delete(oldest.value);
+      }
     }
     this.events.push(stored);
+    this.events = trimToCap(this.events, MAX_MEMORY_EVENTS);
   }
 
   getClipStats(clipId: string): ClipStats {
@@ -318,7 +427,10 @@ class MemoryDriver implements StatsDriver {
     return {
       clipId,
       guesses: guesses.length,
-      fooledPct: guesses.length < 10 ? null : roundedPercentage(wrong, guesses.length),
+      fooledPct:
+        guesses.length < MIN_GUESSES_FOR_PERCENTAGE
+          ? null
+          : roundedPercentage(wrong, guesses.length),
     };
   }
 
@@ -337,8 +449,9 @@ class MemoryDriver implements StatsDriver {
       }
     }
     const scored = [...firstCompletionBySession.values()];
-    const clipStats = new Set([...this.guesses.values()].map((event) => event.clipId))
-      .values()
+    const clipStats = [
+      ...new Set([...this.guesses.values()].map((event) => event.clipId)),
+    ]
       .map((clipId) => this.getClipStats(clipId))
       .filter(
         (stats): stats is ClipStats & { fooledPct: number } => stats.fooledPct !== null,
@@ -348,22 +461,37 @@ class MemoryDriver implements StatsDriver {
         right.fooledPct - left.fooledPct || left.clipId.localeCompare(right.clipId),
     )[0];
 
+    const scenarioAnswers = this.events.filter(
+      (event): event is MemoryScenarioEvent => event.type === "final_scenario",
+    );
+    const verified = scenarioAnswers.filter((event) => event.correct).length;
+
     return {
       sessionsToday: firstCompletionBySession.size,
       avgScore:
         scored.length === 0
           ? null
-          : Math.round((scored.reduce((sum, event) => sum + event.score, 0) / scored.length) * 10) /
-            10,
+          : Math.round(
+              (scored.reduce((sum, event) => sum + event.score, 0) / scored.length) * 10,
+            ) / 10,
       hardestClip: hardestClip
         ? { clipId: hardestClip.clipId, fooledPct: hardestClip.fooledPct }
         : null,
+      verifyFirstPct:
+        scenarioAnswers.length < MIN_GUESSES_FOR_PERCENTAGE
+          ? null
+          : roundedPercentage(verified, scenarioAnswers.length),
     };
   }
 
   isAvailable(): boolean {
     return true;
   }
+}
+
+/** Exported for tests: a driver with no ambient process or file-system state. */
+export function createMemoryDriver(): StatsDriver {
+  return new MemoryDriver();
 }
 
 function createDriver(): StatsDriver {
@@ -389,20 +517,29 @@ function createDriver(): StatsDriver {
   }
 }
 
-const driver = createDriver();
+let driverInstance: StatsDriver | undefined;
+
+function driver(): StatsDriver {
+  driverInstance ??= createDriver();
+  return driverInstance;
+}
 
 export function recordEvent(event: DemoEvent): void {
-  driver.recordEvent(event);
+  driver().recordEvent(event);
 }
 
 export function getClipStats(clipId: string): ClipStats {
-  return driver.getClipStats(clipId);
+  return driver().getClipStats(clipId);
 }
 
 export function getSummary(): SummaryStats {
-  return driver.getSummary();
+  return driver().getSummary();
 }
 
 export function isStatsDriverAvailable(): boolean {
-  return driver.isAvailable();
+  return driver().isAvailable();
+}
+
+export function statsDriverName(): StatsDriverName {
+  return driver().name;
 }

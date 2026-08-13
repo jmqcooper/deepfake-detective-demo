@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import io
 import json
 import re
@@ -32,7 +33,8 @@ import tarfile
 from pathlib import Path
 
 REPO = "fsicoli/common_voice_17_0"
-BASE = f"https://huggingface.co/datasets/{REPO}/resolve/main"
+REVISION = "8262c16bf297c87a9cd88c51997c4758ed7a8ba2"
+BASE = f"https://huggingface.co/datasets/{REPO}/resolve/{REVISION}"
 MIN_SEC, MAX_SEC = 3.5, 9.0
 MIN_WORDS, MAX_WORDS = 6, 18
 
@@ -70,7 +72,8 @@ def main() -> int:
         return 1
 
     durations_path = hf_hub_download(
-        REPO, f"transcript/{args.lang}/clip_durations.tsv", repo_type="dataset"
+        REPO, f"transcript/{args.lang}/clip_durations.tsv", repo_type="dataset",
+        revision=REVISION,
     )
     durations: dict[str, float] = {}
     with open(durations_path, newline="", encoding="utf-8") as fh:
@@ -81,7 +84,7 @@ def main() -> int:
                 continue
 
     tsv_path = hf_hub_download(
-        REPO, f"transcript/{args.lang}/test.tsv", repo_type="dataset"
+        REPO, f"transcript/{args.lang}/test.tsv", repo_type="dataset", revision=REVISION,
     )
     wanted: dict[str, dict] = {}
     fake_texts: list[dict] = []
@@ -137,7 +140,8 @@ def main() -> int:
             meta = wanted[name]
             clip_id = f"{args.lang}2-r{len(reals):02d}"
             src = out / "real" / f"{clip_id}.mp3"
-            src.write_bytes(fobj.read())
+            source_bytes = fobj.read()
+            src.write_bytes(source_bytes)
             wav = out / "real" / f"{clip_id}.wav"
             subprocess.run(
                 ["ffmpeg", "-y", "-v", "error", "-i", str(src),
@@ -145,12 +149,18 @@ def main() -> int:
                 check=True,
             )
             src.unlink(missing_ok=True)
-            reals.append({"id": clip_id, **meta})
+            reals.append({
+                "id": clip_id,
+                **meta,
+                "upstreamPath": member.name,
+                "upstreamSha256": hashlib.sha256(source_bytes).hexdigest(),
+            })
             print(f"  real {clip_id}  {meta['durationSec']:4.1f}s  {meta['text'][:56]}")
 
     (out / "candidates.json").write_text(
         json.dumps(
             {"source": f"Common Voice 17 ({args.lang})", "license": "CC0",
+             "repository": REPO, "sourceRevision": REVISION,
              "lang": args.lang, "reals": reals, "fakeTexts": fake_texts},
             ensure_ascii=False, indent=2,
         )

@@ -84,12 +84,13 @@
   "fakeFactory": {
     "available": false,
     "sentences": [
-      { "id": "s1", "textKey": "factory.s1", "scam": false }
+      {
+        "id": "s1",
+        "text": "Hoi! Ik heb je huiswerk opgegeten.",
+        "scam": false
+      }
     ],
-    "voices": [
-      { "id": "v1", "nameKey": "voice.v1", "avatar": "/samples/voices/v1.svg" }
-    ],
-    "langs": ["nl", "en"],
-    "audioPattern": "/samples/factory/{sentence}_{voice}_{lang}.mp3"
+    "voices": ["nl_female"],
+    "clips": []
   }
 }

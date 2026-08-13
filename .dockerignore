@@ -1,0 +1,20 @@
+# The production image needs only the web app and its one maintenance command.
+# Keeping the build context explicit prevents local model caches, virtualenvs,
+# databases and editor state from being sent to the Docker daemon.
+**
+!web/
+!web/**
+!ops/
+!ops/stats-maintenance.mjs
+!tools/
+!tools/make_synthetic_dutch_fixture.py
+!tools/prepare_samples.py
+
+web/node_modules/
+web/.next/
+web/data/
+web/*.db
+web/*.db-shm
+web/*.db-wal
+web/.env*.local
+web/npm-debug.log*

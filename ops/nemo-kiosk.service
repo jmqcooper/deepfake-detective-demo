@@ -1,0 +1,17 @@
+[Unit]
+Description=NEMO Voice Lab kiosk browser
+After=graphical.target docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nemo
+Environment=DISPLAY=:0
+Environment=KIOSK_URL=http://127.0.0.1:3000
+Environment=KIOSK_BROWSER=chromium
+ExecStart=/opt/nemo-demo/ops/kiosk-launch.sh
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=graphical.target

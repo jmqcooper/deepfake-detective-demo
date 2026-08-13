@@ -19,7 +19,7 @@ sees the difference.
 
 ```sh
 python3.12 -m venv .venv
-.venv/bin/python -m pip install -r tools/requirements.txt
+.venv/bin/python -m pip install --require-hashes -r tools/requirements.txt
 ```
 
 ## Synthetic fixture (local dev)
@@ -48,6 +48,8 @@ MLS-paired path is kept as a fallback and powers the synthetic integrity fixture
 Each writes `tools/.cache/cv/{lang}/` — real candidate clips (one per speaker) plus a
 disjoint set of fake-sentence *texts* for the TTS. It shortlists more than the demo needs;
 a later step keeps the clearest. Common Voice is **CC0** — public domain.
+The mirror is pinned to immutable revision `8262c16b…`; generated metadata preserves
+upstream paths and SHA-256 checksums instead of silently following a moving branch.
 
 ### 2. Score, speak, transcribe (input/output contract)
 
@@ -63,8 +65,8 @@ tools/.cache/cv/{lang}/
 └── fake/… .wav
 ```
 
-- **TTS** (`mistralai/Voxtral-4B-TTS-2603`) speaks each fake sentence into `fake/`.
-- **ASR** (`mistralai/Voxtral-Mini-4B-Realtime-2602`) transcribes every real and fake clip
+- **TTS** (`mistralai/Voxtral-4B-TTS-2603` at `b81be46c…`) speaks each fake sentence into `fake/`.
+- **ASR** (`mistralai/Voxtral-Mini-4B-Realtime-2602` at `2769294d…`) transcribes every real and fake clip
   into `transcripts.json`, used to screen candidates by intelligibility.
 
 Do **not** replace ASR mistakes with the ground-truth sentence — Miko's fallibility is part
@@ -91,15 +93,22 @@ model:
   archaic Dutch the ASR mis-hears even at studio quality.)
 - The full **English** mirror of every scripted clip, including the **Station 4** factory.
 
+The supported factory generator targets the model's OpenAI-compatible local endpoint and
+hard-fails unless the complete sentence × voice grid is delivered:
+
+```sh
+.venv/bin/python tools/generate_factory_voxtral.py --endpoint http://127.0.0.1:8010
+```
+
 Station 2's cases are recorded speech, not scripted text, so they are not part of this step.
 
 ### 5. Transcribe the *delivered* audio
 
 Run ASR again on **exactly what the visitor hears** — the 4.0 s case trims and the four
 Station 3 codec rungs — not the full-length source WAVs. Transcribing an ~11 s source for
-a 4 s clip makes Miko "write down" words the visitor never heard. An **empty** transcript
-for the heaviest codec rungs is genuine data (the ASR hears nothing at 6 kbit/s) and
-Station 3 shows it as such. Merge the result back in:
+a 4 s clip makes Miko "write down" words the visitor never heard. If the model recognises
+nothing, the batch records an explicit bracketed “no speech recognised” result; a blank field
+means the pass is unfinished and cannot ship. Merge the result back in:
 
 ```sh
 .venv/bin/python tools/merge_delivered_transcripts.py
@@ -117,10 +126,11 @@ walkthrough, the four-rung codec ladder, and 64-bin magma mel-spectrogram PNGs. 
 case is trimmed/padded to exactly 4.0 s from speech onset, two-pass EBU R128 normalised to
 −16 LUFS, stripped of metadata, and encoded as identical MP3.
 
-The verifier hard-fails unless a language's ten cases share codec, sample rate, channels,
-bitrate and duration; land at −16 ±0.5 LUFS; carry no metadata; interleave real/fake; provide
-one of each label at every difficulty tier; use disjoint sentence IDs across labels; and
-contain Voxtral ASR transcripts.
+The verifier decodes every referenced audio and image asset. It hard-fails unless Dutch and
+English each contain ten cases with uniform codec, sample rate, channels, bitrate and duration;
+land at −16 ±0.5 LUFS; carry no metadata; interleave real/fake; provide one of each label at
+every difficulty tier; use disjoint sentence IDs across labels; contain non-empty delivered-ASR
+results; expose complete bilingual codec mirrors; and provide a complete factory grid.
 
 ## Licensing
 
