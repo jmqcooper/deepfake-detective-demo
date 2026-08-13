@@ -78,6 +78,15 @@ def main() -> int:
     })
     write_json(out / "fakes.json", {"model": TTS_MODEL, "clips": fakes})
     write_json(out / "transcripts.json", {"model": ASR_MODEL, "transcripts": transcripts})
+    write_json(out / "ladder_transcripts.json", {
+        "model": ASR_MODEL,
+        "transcripts": {
+            "studio": "Dit is een synthetisch transcript voor de studiokwaliteit.",
+            "phone": "Dit is een synthetisch transcript voor de telefoonkwaliteit.",
+            "whatsapp": "Dit is een synthetisch transcript voor de berichtkwaliteit.",
+            "terrible": "Dit is een synthetisch transcript voor de laagste kwaliteit.",
+        },
+    })
     print(f"Wrote synthetic Dutch fixture to {out}")
     return 0
 

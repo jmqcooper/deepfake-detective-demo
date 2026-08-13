@@ -64,7 +64,7 @@ def main() -> int:
     # v2 case packs: delivered transcripts live inside pack-{lang}/pack.json.
     packs: dict[str, tuple[Path, dict]] = {}
     for lang in ("nl", "en"):
-        pack_path = ROOT / f"tools/.cache/pack-{lang}" / "pack.json"
+        pack_path = args.cache.parent / f"pack-{lang}" / "pack.json"
         if pack_path.is_file():
             packs[lang] = (pack_path, load(pack_path))
 
@@ -98,23 +98,26 @@ def main() -> int:
             json.dumps(pack_doc, ensure_ascii=False, indent=2), encoding="utf-8"
         )
 
-    # An EMPTY codec transcript is legitimate data, not a failure: at 6 kbit/s
-    # the ASR genuinely hears nothing, and Station 3 shows exactly that. Only a
-    # missing key (the rung was never transcribed) is an error. The English
-    # rungs ("{rung}_en") are optional — packs without the English mirror are
-    # still complete.
+    # The ASR batch records an explicit bracketed marker when it recognises no
+    # speech. Empty strings remain an incomplete-pass signal and cannot ship.
     ladder = {}
+    require_english_ladder = any(
+        isinstance(rung, dict) and "audioEn" in rung
+        for rung in manifest.get("codecLadder", [])
+    )
     for rung in RUNGS:
         text = delivered.get(f"codec/{rung}")
-        if not isinstance(text, str):
+        if not isinstance(text, str) or not text.strip():
             missing.append(f"codec/{rung}")
             continue
         ladder[rung] = text
-        print(f"  ladder/{rung:<12} {text[:52] if text else '(hears nothing)'}")
+        print(f"  ladder/{rung:<12} {text[:52]}")
         text_en = delivered.get(f"codec/{rung}_en")
-        if isinstance(text_en, str):
+        if isinstance(text_en, str) and text_en.strip():
             ladder[f"{rung}_en"] = text_en
-            print(f"  ladder/{rung + '_en':<12} {text_en[:52] if text_en else '(hears nothing)'}")
+            print(f"  ladder/{rung + '_en':<12} {text_en[:52]}")
+        elif require_english_ladder:
+            missing.append(f"codec/{rung}_en")
 
     # English factory transcripts (generate_english.slurm) fold into the same
     # transcripts.json namespace the Dutch factory uses.
@@ -125,7 +128,7 @@ def main() -> int:
         if isinstance(en_transcripts, dict):
             folded = 0
             for key, text in en_transcripts.items():
-                if isinstance(text, str) and key.startswith("factory/"):
+                if isinstance(text, str) and text.strip() and key.startswith("factory/"):
                     cache[key] = text
                     folded += 1
             print(f"  + {folded} English factory transcripts")

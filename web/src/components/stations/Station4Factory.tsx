@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   Clip,
   ClueBox,
@@ -8,7 +8,9 @@ import type {
   FakeFactory,
 } from "@/components/manifest-types";
 import { useAudio, useBeat, useT, type Lang } from "@/components/kiosk/hooks";
+import { announce } from "@/components/kiosk/announcer";
 import {
+  AudioProblem,
   BigButton,
   Panel,
   Persona,
@@ -19,6 +21,7 @@ import {
   Typewriter,
 } from "@/components/kiosk/ui";
 import { IconFactory } from "@/components/kiosk/icons";
+import { isReportableError, playbackErrorKey } from "@/lib/audio-state";
 
 type Phase =
   | "sentence"
@@ -28,6 +31,9 @@ type Phase =
   | "listening"
   | "verdict"
   | "echo";
+
+const BUILD_MS = 1600;
+const SEND_MS = 1100;
 
 /**
  * Station 4 — "De nepstem-fabriek". The message the whole demo exists to land.
@@ -40,9 +46,13 @@ type Phase =
  * The choreography is strict, because this is a punchline and punchlines die
  * when the beats overlap: the machine builds, the message travels, Miko WRITES
  * WHILE THE AUDIO PLAYS, and only after his pen stops does his cheerful verdict
- * appear — followed, one tap later, by Echo's alarm. The old version printed
- * "Klinkt prima! Bericht ontvangen" before the clip had even started playing,
- * which gave the entire trick away above a still-typing transcript.
+ * appear — followed, one tap later, by Echo's alarm.
+ *
+ * And the choreography is driven by the audio element, not by a timer. It used
+ * to run on `setTimeout`, so on a muted tablet or a missing file Miko would
+ * transcribe a clip nobody heard and cheerfully declare it fine — the demo
+ * performing its own punchline to an empty room. Now the pen only moves while
+ * the clip is playing, and the verdict only lands when it has ended.
  *
  * Everything on this screen has to be genuine or the lesson is a lie:
  *  - the audio is real Voxtral TTS output, not a sound effect;
@@ -65,21 +75,28 @@ export function Station4Factory({
   const [phase, setPhase] = useState<Phase>(usable ? "sentence" : "voice");
   const [sentenceId, setSentenceId] = useState<string | null>(null);
   const [chosen, setChosen] = useState<FactoryClip | Clip | null>(null);
-  const [clipMs, setClipMs] = useState(4000);
 
-  const audioSrc = chosen ? chosen.audio : undefined;
-  const { ref, play, playing } = useAudio(audioSrc);
+  const audioSrc = chosen?.audio;
+  const {
+    ref: audioRef,
+    play,
+    playing,
+    status,
+    durationSec,
+    error: audioError,
+  } = useAudio(audioSrc);
 
   // Clips in the interface language when the pack has them; the original Dutch
   // set otherwise. Sentences are derived from the clips so their on-screen text
   // is in the language the voice actually speaks.
-  const langClips = (() => {
+  const langClips = useMemo(() => {
     if (!usable) return [];
     const wanted = usable.clips.filter((c) => (c.lang ?? "nl") === lang);
     return wanted.length
       ? wanted
       : usable.clips.filter((c) => (c.lang ?? "nl") === "nl");
-  })();
+  }, [usable, lang]);
+
   const sentences = langClips
     .filter(
       (c, i) => langClips.findIndex((o) => o.sentenceId === c.sentenceId) === i,
@@ -88,6 +105,7 @@ export function Station4Factory({
 
   const transcript =
     chosen && "transcript" in chosen ? (chosen.transcript ?? "") : "";
+  const requested = chosen && "text" in chosen ? chosen.text : "";
   const clue = chosen && "clue" in chosen ? chosen.clue : null;
   const spectrogram = chosen
     ? "spectrogram" in chosen && typeof chosen.spectrogram === "string"
@@ -95,46 +113,92 @@ export function Station4Factory({
       : (chosen as Clip).spectrogram.image
     : "";
 
-  // Theatre, in three beats: the machine "builds" (it's a lookup — the wait
+  // Theatre, in two beats: the machine "builds" (it's a lookup — the wait
   // sells the idea that making a fake voice is something a machine simply
-  // does), the message travels to Miko, then Miko hears it and starts writing.
+  // does), then the message travels to Miko. Both are pure staging with no
+  // audio behind them, so timers are the honest mechanism here.
   useEffect(() => {
     if (phase === "building") {
-      const timer = setTimeout(() => setPhase("sent"), 1600);
+      const timer = setTimeout(() => setPhase("sent"), BUILD_MS);
       return () => clearTimeout(timer);
     }
     if (phase === "sent") {
-      const timer = setTimeout(() => {
-        // Freeze the clip length NOW so the typewriter's pace can't change
-        // mid-line if audio metadata resolves late.
-        const dur = ref.current?.duration;
-        setClipMs(dur && isFinite(dur) && dur > 0 ? dur * 1000 : 4000);
-        setPhase("listening");
-      }, 1100);
+      const timer = setTimeout(() => setPhase("listening"), SEND_MS);
       return () => clearTimeout(timer);
     }
-    if (phase === "listening") {
-      const timer = setTimeout(() => play(), 300);
-      return () => clearTimeout(timer);
+  }, [phase]);
+
+  /**
+   * True once this beat's playback has genuinely started. Needed because the
+   * visitor almost always previews the clip first, which leaves the element in
+   * `ended` — without this the punchline would fire the instant the message
+   * "arrived", off the back of a clip they heard a minute ago.
+   */
+  const heardStart = useRef(false);
+
+  // Entering the listening beat: start the clip, once. `play` is stable, so a
+  // failure does not re-trigger this — retrying on every status change would
+  // loop forever, since play() moves the status to loading and back to error.
+  useEffect(() => {
+    if (phase !== "listening") return;
+    heardStart.current = false;
+    const timer = setTimeout(() => void play(), 300);
+    return () => clearTimeout(timer);
+  }, [phase, play]);
+
+  /**
+   * The punchline is gated on the clip actually finishing. `ended` after a real
+   * `playing` means sound happened; a blocked or missing clip leaves the phase
+   * where it is and shows the problem instead, so Miko never declares a message
+   * fine that nobody has heard.
+   */
+  useEffect(() => {
+    if (phase !== "listening") return;
+    if (status === "playing") {
+      heardStart.current = true;
+      return;
     }
-  }, [phase, play, ref]);
+    if (status === "ended" && heardStart.current) {
+      setPhase("verdict");
+      announce(t("station4.mikoVerdict"));
+    }
+  }, [phase, status, t]);
 
   // Tap = hear your fake before you commit — crafting the deception is the fun
-  // part, and hearing it first makes "send to Miko" a deliberate act.
-  const preview = (clip: FactoryClip | Clip) => {
-    setChosen(clip);
-    setTimeout(() => play(), 150);
-  };
+  // part, and hearing it first makes "send to Miko" a deliberate act. Tapping
+  // the one already selected replays it rather than doing nothing.
+  const preview = useCallback(
+    (clip: FactoryClip | Clip) => {
+      if (chosen?.id === clip.id) {
+        void play();
+        return;
+      }
+      setChosen(clip);
+    },
+    [chosen, play],
+  );
+
+  // A newly chosen clip previews itself once its element has the new source.
+  useEffect(() => {
+    if (phase !== "voice" || !audioSrc) return;
+    const timer = setTimeout(() => void play(), 150);
+    return () => clearTimeout(timer);
+  }, [audioSrc, phase, play]);
 
   const send = () => {
     if (chosen) setPhase("building");
   };
 
   const voicesFor = (sid: string) => langClips.filter((c) => c.sentenceId === sid);
+  const playbackError = isReportableError(audioError) ? audioError : null;
+  const listening = phase === "listening";
 
   return (
     <StationCard>
-      {audioSrc && <audio ref={ref} src={audioSrc} preload="auto" />}
+      {/* Always rendered, so the element (and its cleanup) exists from the
+          start. Rendering it conditionally meant the very first playback
+          attached its listeners to an element that had only just appeared. */}
+      <audio ref={audioRef} src={audioSrc} preload="auto" />
 
       {/* Step 1 — choose what the fake voice will SAY. */}
       {phase === "sentence" && usable && (
@@ -151,9 +215,9 @@ export function Station4Factory({
                   setPhase("voice");
                 }}
                 style={{ animationDelay: `${100 + i * 70}ms` }}
-                className="rise flex items-center gap-3 rounded-[20px] bg-ink-800/80 p-5 text-left ring-1 ring-white/[0.06] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.2,0,0,1)] ring-inset hover:bg-ink-700 active:scale-[0.96]"
+                className="rise flex min-h-14 items-center gap-3 rounded-[20px] bg-ink-800/80 p-4 text-left ring-1 ring-white/[0.06] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.2,0,0,1)] ring-inset hover:bg-ink-700 active:scale-[0.96] sm:p-5"
               >
-                <span className="text-lg font-bold text-white/90">
+                <span className="text-base font-bold text-white/90 sm:text-lg">
                   “{s.text}”
                 </span>
               </button>
@@ -167,7 +231,17 @@ export function Station4Factory({
       {phase === "voice" && (
         <>
           <PersonaBubble who="echo">{t("station4.pickVoice")}</PersonaBubble>
-          <div className="mx-auto grid w-full max-w-2xl gap-4 sm:grid-cols-2">
+
+          {playbackError && (
+            <AudioProblem
+              lang={lang}
+              message={t(playbackErrorKey(playbackError))}
+              onRetry={() => void play()}
+              retryLabel={t("audio.retry")}
+            />
+          )}
+
+          <div className="mx-auto grid w-full max-w-2xl gap-3 sm:grid-cols-2 sm:gap-4">
             {(usable && sentenceId
               ? voicesFor(sentenceId)
               : fallbackFakes.slice(0, 2)
@@ -178,8 +252,9 @@ export function Station4Factory({
                   key={clip.id}
                   type="button"
                   onClick={() => preview(clip)}
+                  aria-pressed={selected}
                   style={{ animationDelay: `${120 + i * 90}ms` }}
-                  className={`rise flex flex-col items-center gap-3 rounded-[24px] p-6 ring-inset transition-[transform,background-color,box-shadow] duration-150 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.96] ${
+                  className={`rise flex flex-col items-center gap-3 rounded-[24px] p-5 ring-inset transition-[transform,background-color,box-shadow] duration-150 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.96] sm:p-6 ${
                     selected
                       ? "bg-ink-700 ring-2 ring-fake-400"
                       : "bg-ink-800/80 ring-1 ring-white/[0.06] hover:bg-ink-700"
@@ -188,7 +263,7 @@ export function Station4Factory({
                   <span className="grid h-16 w-16 place-items-center rounded-full bg-fake-500/15 text-fake-400">
                     {selected && playing ? <PlayingBars /> : <IconFactory size={30} />}
                   </span>
-                  <span className="font-display text-xl font-extrabold">
+                  <span className="font-display text-lg font-extrabold sm:text-xl">
                     {"voice" in clip
                       ? t(`voice.${clip.voice}`)
                       : t(`station4.voice${i + 1}`)}
@@ -211,21 +286,21 @@ export function Station4Factory({
       )}
 
       {(phase === "building" || phase === "sent") && (
-        <div className="grid min-h-[24rem] place-items-center">
-          <div className="flex flex-col items-center gap-6">
+        <div className="grid min-h-[18rem] place-items-center sm:min-h-[24rem]">
+          <div className="flex flex-col items-center gap-5 sm:gap-6">
             {phase === "building" ? (
-              <span className="breathe grid h-24 w-24 place-items-center rounded-[28px] bg-fake-500/15 text-fake-400">
+              <span className="breathe grid h-20 w-20 place-items-center rounded-[28px] bg-fake-500/15 text-fake-400 sm:h-24 sm:w-24">
                 <IconFactory size={48} />
               </span>
             ) : (
-              <Persona who="miko" size={96} mood="listening" className="breathe" />
+              <Persona who="miko" size={88} mood="listening" className="breathe" />
             )}
-            <p className="font-display text-2xl font-extrabold text-white/85">
+            <p className="text-center font-display text-xl font-extrabold text-white/85 sm:text-2xl">
               {phase === "building"
                 ? t("station4.building")
                 : t("station4.sending")}
             </p>
-            <div className="h-1.5 w-72 overflow-hidden rounded-full bg-ink-800">
+            <div className="h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-ink-800">
               <div
                 className="h-full w-1/3 rounded-full bg-fake-500"
                 style={{ animation: "scan 1.4s ease-in-out infinite" }}
@@ -237,33 +312,53 @@ export function Station4Factory({
 
       {(phase === "listening" || phase === "verdict" || phase === "echo") &&
         chosen && (
-          <div className="flex flex-col gap-5">
-            <Panel className="rise flex items-center gap-4 p-5 ring-miko-400/25">
+          <div className="flex flex-col gap-4 sm:gap-5">
+            {playbackError && (
+              <AudioProblem
+                lang={lang}
+                message={t(playbackErrorKey(playbackError))}
+                onRetry={() => void play()}
+                retryLabel={t("audio.retry")}
+              />
+            )}
+
+            {/* Gating the punchline on real playback is right; trapping the
+                visitor behind a clip that will never play is not. This is the
+                way out, and it says plainly that the sound was skipped. */}
+            {playbackError && listening && (
+              <div className="flex justify-center">
+                <BigButton onClick={() => setPhase("verdict")} tone="neutral">
+                  {t("audio.continueWithout")}
+                </BigButton>
+              </div>
+            )}
+
+            <Panel className="rise flex items-center gap-3 p-4 ring-miko-400/25 sm:gap-4 sm:p-5">
               <Persona
                 who="miko"
-                size={78}
-                mood={phase === "listening" ? "listening" : "happy"}
-                className="breathe shrink-0"
+                size={64}
+                mood={listening ? "listening" : "happy"}
+                className="breathe hidden shrink-0 sm:block"
               />
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <p className="mb-1 font-mono text-[11px] font-bold tracking-[0.16em] text-miko-400 uppercase">
                   {t("station4.mikoHeard")}
                 </p>
-                <p className="text-xl font-bold text-white md:text-2xl">
+                <p className="text-lg font-bold text-white sm:text-xl md:text-2xl">
                   “
                   <Typewriter
                     key={chosen.id}
                     text={transcript || t("station4.noTranscript")}
-                    totalMs={clipMs}
-                    onDone={() =>
-                      setPhase((p) => (p === "listening" ? "verdict" : p))
-                    }
+                    totalMs={(durationSec ?? 4) * 1000}
+                    /* The pen stops when the sound does. Nothing here should
+                       ever describe audio that is not actually playing. */
+                    paused={listening && !playing}
                   />
                   ”
                 </p>
                 {/* Miko's cheerful all-clear may only appear once he has finished
-                    writing — it IS the joke, and it must not precede the setup. */}
-                <p className="mt-2 min-h-7 text-lg font-bold text-miko-300">
+                    listening — it IS the joke, and it must not precede the setup. */}
+                <p className="mt-2 min-h-7 text-base font-bold text-miko-300 sm:text-lg">
                   {phase !== "listening" && (
                     <span className="rise inline-block">
                       {t("station4.mikoVerdict")}
@@ -273,10 +368,32 @@ export function Station4Factory({
               </div>
             </Panel>
 
+            {/* What you asked for versus what the recogniser came back with.
+                Both are in the pack; neither is written by us. On this station
+                they usually match almost exactly, which is the entire point. */}
+            {phase !== "listening" && requested && (
+              <div className="rise grid gap-2 sm:grid-cols-2">
+                <div className="min-w-0 rounded-[16px] bg-ink-800/60 p-3">
+                  <p className="font-mono text-[10px] tracking-[0.16em] text-ink-400 uppercase">
+                    {t("station4.youAskedFor")}
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-white/85">“{requested}”</p>
+                </div>
+                <div className="min-w-0 rounded-[16px] bg-ink-800/60 p-3">
+                  <p className="font-mono text-[10px] tracking-[0.16em] text-ink-400 uppercase">
+                    {t("station4.mikoWrote")}
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-white/85">
+                    “{transcript || t("station4.noTranscript")}”
+                  </p>
+                </div>
+              </div>
+            )}
+
             {phase === "verdict" && (
-              <div className="rise flex flex-wrap items-center justify-between gap-4">
+              <div className="rise flex flex-wrap items-center justify-between gap-3 sm:gap-4">
                 <PlayButton
-                  onClick={play}
+                  onClick={() => void play()}
                   playing={playing}
                   tone="miko"
                   label={t("common.listen")}
@@ -341,6 +458,10 @@ function EchoVerdict({
   const t = useT(lang);
   const beat = useBeat([600, 1600, 2400]);
 
+  useEffect(() => {
+    announce(t("station4.echoAlert"), "assertive");
+  }, [t]);
+
   return (
     <>
       <PersonaBubble who="echo" mood="alert" tone="alert">
@@ -353,19 +474,31 @@ function EchoVerdict({
           clue={clue}
           showClue={Boolean(clue)}
           scanning
-          className="h-44 w-full"
+          className="h-36 w-full sm:h-44"
           caption={t("station2.evidence")}
+          alt={t("station2.specAlt")}
+          missingLabel={t("audio.missingImage")}
+          clueDescription={clue ? t(clue.key) : t("station4.noClueDescription")}
         />
       )}
 
       {beat >= 2 && (
         <>
+          {/* Echo is theatre with a script, and the script says so. He is not
+              analysing anything: this clip arrived in the pack already labelled
+              as a fake, because we generated it. Saying that out loud costs the
+              character nothing and is the difference between a demo about
+              deepfakes and a demo that is one. */}
+          <p className="text-xs leading-relaxed text-ink-400 sm:text-sm">
+            {t("station4.echoDisclosure")}
+          </p>
+
           {/* If they picked the scam sentence, Echo gives the one piece of advice
               that actually protects a family. This is the whole reason that
               sentence is in the demo. */}
           {scam && (
-            <div className="rise rounded-[20px] bg-fake-500/10 p-5 ring-1 ring-fake-500/40 ring-inset">
-              <p className="text-lg font-bold text-fake-400">
+            <div className="rise rounded-[20px] bg-fake-500/10 p-4 ring-1 ring-fake-500/40 ring-inset sm:p-5">
+              <p className="text-base font-bold text-fake-400 sm:text-lg">
                 {t("station4.scamTip")}
               </p>
             </div>
@@ -373,8 +506,8 @@ function EchoVerdict({
 
           {/* The thesis of the entire demo, stated once, plainly, after the
               visitor has already felt it. */}
-          <div className="rise rounded-[24px] bg-gradient-to-br from-echo-500/20 via-ink-800/40 to-miko-500/20 p-6 text-center ring-1 ring-white/10 ring-inset">
-            <p className="font-display text-2xl leading-snug font-extrabold text-white md:text-[1.8rem]">
+          <div className="rise rounded-[24px] bg-gradient-to-br from-echo-500/20 via-ink-800/40 to-miko-500/20 p-5 text-center ring-1 ring-white/10 ring-inset sm:p-6">
+            <p className="font-display text-xl leading-snug font-extrabold text-white sm:text-2xl md:text-[1.8rem]">
               {t("station4.lesson")}
             </p>
           </div>

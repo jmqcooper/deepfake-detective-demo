@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useT, type Lang } from "@/components/kiosk/hooks";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useT, type Lang, type TrackFn } from "@/components/kiosk/hooks";
+import { announce } from "@/components/kiosk/announcer";
 import { Badge, BigButton, PersonaBubble, StationCard } from "@/components/kiosk/ui";
+import { FinalScenario } from "@/components/stations/FinalScenario";
 import {
   IconBrain,
   IconEar,
@@ -12,44 +14,108 @@ import {
   IconPhone,
   IconSlider,
 } from "@/components/kiosk/icons";
-
-interface Summary {
-  sessionsToday: number;
-  avgScore: number | null;
-  hardestClip: { clipId: string; fooledPct: number } | null;
-}
+import type { SummaryStats } from "@/lib/stats";
+import type { FinalScenarioChoice } from "@/lib/final-scenario";
 
 /**
- * Station 5 — the diploma.
+ * Station 5 — the last test, then the diploma.
  *
  * The most important element on this screen is not the score, it's the crowd
  * stat: "62% of visitors fell for that one too". For a general audience the
  * reassurance that being fooled is normal is the whole take-home — a visitor who
  * leaves feeling stupid has learned nothing useful.
+ *
+ * The scenario comes first, and it is the only part of the demo that transfers.
+ * Everything before it teaches a visitor to notice something about a
+ * spectrogram, which is a museum skill. This teaches what to do when a voice
+ * they love asks them for money, which is the one that matters at home.
  */
 export function Station5Diploma({
   score,
   total,
   lang,
+  track,
+  scamMessage,
+  onScoreChange,
   onRestart,
 }: {
   score: number;
   total: number;
   lang: Lang;
+  track: TrackFn;
+  /** A real scam clip from the pack, plus the sentence it actually says. */
+  scamMessage: { audio: string; text: string } | undefined;
+  onScoreChange: (score: number) => void;
   onRestart: () => void;
 }) {
   const t = useT(lang);
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const [summary, setSummary] = useState<SummaryStats | null>(null);
+  const [scenarioDone, setScenarioDone] = useState(false);
+  const [verifiedFirst, setVerifiedFirst] = useState(false);
+  const completionSent = useRef(false);
+
+  /**
+   * The visit is closed out here, and the score written down is the server's
+   * own tally of the guesses it accepted — not a number this component was
+   * handed. The response carries that tally back so the diploma shows the same
+   * figure the exhibit reports.
+   */
+  useEffect(() => {
+    if (!scenarioDone || completionSent.current) return;
+    completionSent.current = true;
+    let cancelled = false;
+    void (async () => {
+      const response = await track({ station: 5, type: "session_complete" });
+      if (cancelled || !response) return;
+      onScoreChange(response.session.correct);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [onScoreChange, scenarioDone, track]);
 
   useEffect(() => {
-    fetch("/api/stats/summary")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((s: Summary | null) => setSummary(s))
-      .catch(() => setSummary(null));
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        const response = await fetch("/api/stats/summary", {
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        setSummary((await response.json()) as SummaryStats);
+      } catch {
+        // No stats is a supported state, not a failure worth showing.
+      }
+    })();
+    return () => controller.abort();
   }, []);
 
+  const onScenarioAnswer = useCallback(
+    async (choice: FinalScenarioChoice) => {
+      const response = await track({ station: 5, type: "final_scenario", choice });
+      return response?.scenario?.correct ?? choice === "callback";
+    },
+    [track],
+  );
+
+  if (!scenarioDone) {
+    return (
+      <FinalScenario
+        lang={lang}
+        message={scamMessage}
+        onAnswer={onScenarioAnswer}
+        onDone={(wasRight) => {
+          setVerifiedFirst(wasRight);
+          setScenarioDone(true);
+          announce(t("station5.title"));
+        }}
+      />
+    );
+  }
+
   const rank = score >= 5 ? "master" : score >= 3 ? "detective" : "rookie";
-  const tipIcons = [IconEar, IconPhone, IconHandshake];
+  // Phone first: the take-home is the phone call, not the listening trick.
+  const tipIcons = [IconPhone, IconEar, IconHandshake];
 
   return (
     <StationCard>
@@ -58,29 +124,33 @@ export function Station5Diploma({
           {t("station5.title")}
         </p>
         <h2
-          className="rise text-5xl font-black text-white md:text-6xl"
+          className="rise text-3xl font-black text-white sm:text-5xl md:text-6xl"
           style={{ animationDelay: "80ms" }}
         >
           {t(`station5.rank.${rank}`)}
         </h2>
         <p
-          className="rise text-xl font-bold text-ink-400 tnum"
+          className="rise text-lg font-bold text-ink-400 tnum sm:text-xl"
           style={{ animationDelay: "160ms" }}
         >
           {t("station5.score", { score, total })}
         </p>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-5 py-2">
+      <div className="flex flex-wrap justify-center gap-4 py-2 sm:gap-5">
         <Badge icon={<IconBrain />} label={t("station5.badge1")} delayMs={240} />
         <Badge icon={<IconMagnifier />} label={t("station5.badge2")} delayMs={320} />
         <Badge icon={<IconSlider />} label={t("station5.badge3")} delayMs={400} />
         <Badge icon={<IconFactory />} label={t("station5.badge4")} delayMs={480} />
+        {/* Earned by choosing to verify, not by hearing anything. */}
+        {verifiedFirst && (
+          <Badge icon={<IconPhone />} label={t("station5.badge5")} delayMs={560} />
+        )}
       </div>
 
       {summary && summary.sessionsToday > 0 && (
         <p
-          className="rise text-center text-base font-semibold text-ink-400 tnum"
+          className="rise text-center text-sm font-semibold text-ink-400 tnum sm:text-base"
           style={{ animationDelay: "540ms" }}
         >
           {t("station5.crowd", {
@@ -89,6 +159,8 @@ export function Station5Diploma({
           })}
           {summary.hardestClip &&
             " " + t("station5.hardest", { pct: summary.hardestClip.fooledPct })}
+          {summary.verifyFirstPct !== null &&
+            " " + t("station5.verifyCrowd", { pct: summary.verifyFirstPct })}
         </p>
       )}
 
@@ -102,13 +174,13 @@ export function Station5Diploma({
           return (
             <div
               key={i}
-              className="rise rounded-[20px] bg-ink-800/70 p-5 ring-1 ring-white/[0.06] ring-inset"
+              className="rise min-w-0 rounded-[20px] bg-ink-800/70 p-4 ring-1 ring-white/[0.06] ring-inset sm:p-5"
               style={{ animationDelay: `${640 + i * 80}ms` }}
             >
               <span className="mb-3 grid h-11 w-11 place-items-center rounded-[14px] bg-echo-500/15 text-echo-300">
                 <Icon />
               </span>
-              <p className="text-base leading-snug font-bold text-white/85">
+              <p className="text-sm leading-snug font-bold text-white/85 sm:text-base">
                 {t(`station5.tip${i}`)}
               </p>
             </div>

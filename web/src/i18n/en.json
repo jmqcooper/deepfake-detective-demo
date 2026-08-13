@@ -10,11 +10,45 @@
     "real": "REAL",
     "fake": "FAKE",
     "skip": "Skip",
+    "skipStation": "Skip mission {n}",
+    "langGroup": "Language",
     "loading": "One moment…"
+  },
+  "audio": {
+    "retry": "Try again",
+    "missingImage": "Sound picture not generated yet",
+    "continueWithout": "Continue without sound",
+    "error": {
+      "blocked": "Your browser didn't let the sound start on its own. Tap Listen to play it.",
+      "missing": "This sound file is missing. The sample pack probably hasn't been generated yet.",
+      "network": "The sound couldn't load. Check the connection and try again.",
+      "decode": "This sound file can't be played on this device.",
+      "unknown": "Something went wrong with the sound.",
+      "unknownRung": "That setting wouldn't play. Tap it again, or pick another one."
+    }
+  },
+  "soundcheck": {
+    "intro": "Before we start: can you actually hear me? Everything after this is sound.",
+    "title": "Sound check",
+    "body": "Press the button. You should hear a short sentence. If you hear nothing, we'll help you fix it — nothing in this demo works without sound.",
+    "play": "Play the test sound",
+    "playAgain": "Play it again",
+    "heard": "I can hear it!",
+    "silent": "I hear nothing",
+    "start": "Start the training",
+    "confirmed": "Sound confirmed. Starting mission 1.",
+    "tipsTitle": "No sound? Try these, in this order",
+    "tip1": "Turn the volume up — on the device and in the browser.",
+    "tip2": "Check the silent switch or Do Not Disturb; on a tablet it mutes everything.",
+    "tip3": "If you're wearing headphones, check they're plugged in properly.",
+    "tip4": "Then press the test sound once more — some browsers only allow sound after you tap.",
+    "continueAnyway": "Continue without sound"
   },
   "setup": {
     "title": "No audio samples yet",
-    "body": "The demo needs a set of audio samples first. Run these commands in the project folder:"
+    "body": "The demo needs a set of audio samples first. Run these commands in the project folder:",
+    "brokenTitle": "The sample pack can't be read",
+    "brokenBody": "There is a manifest.json, but it doesn't match the format the app expects. Regenerate the pack:"
   },
   "persona": {
     "miko": {
@@ -52,26 +86,37 @@
       "miko": "Sound is wobbling air! This is how a sentence feels in my ears. Press Listen."
     },
     "stage1": {
-      "miko": "I turn the sound into a picture. Low at the bottom, high at the top. Tap the picture to hear a bit again!"
+      "miko": "I turn the sound into a picture. Low at the bottom, high at the top. Bright means loud — can you find the loudest moment?"
     },
     "stage2": {
       "miko": "Now I hunt for chunks of sound in the picture. I'm never sure — watch me guess!"
     },
     "stage3": {
-      "miko": "All the chunks go through my brain: lots of little knobs guessing together. Nobody can see what happens inside. A black box!"
-    },
-    "stage4": {
       "miko": "And then I glue the chunks together into words. Look, I'm writing along!"
     },
-    "brainLabel": "The black box",
-    "handoff": "So that's how I hear! But whether a voice is real or fake? I can't tell. That's what Agent Echo is for…",
+    "stepsLabel": "Steps in this mission",
+    "stepOf": "Step {n} of {total}",
+    "waveLabel": "The shape of the sound: tall means loud, flat means quiet",
     "specLabel": "The sound picture",
+    "specAlt": "A sound picture: time runs left to right, low tones at the bottom, high tones at the top. Bright patches are loud.",
+    "scrubLabel": "Point at a moment in the sound picture",
+    "scrubHint": "Tap the picture, or use the arrow keys, to jump to that moment. Home and End go to the start and the end.",
+    "peakPrompt": "Point at the moment you think is the LOUDEST, then confirm.",
+    "peakCommit": "This is the loudest bit",
+    "peakClose": "Spot on! The loudest moment really is around {pct}% through — you can see it, and now you can hear it.",
+    "peakFar": "Not quite! The loudest moment is around {pct}% through. Look how much brighter the picture is there.",
+    "peakExplain": "That was measured from the sound itself, right here in your browser — not guessed by an AI. Bright in the picture really does mean loud.",
+    "peakLoading": "Reading the sound…",
+    "yourGuess": "Where you pointed",
+    "trueLoudest": "The actual loudest moment",
+    "handoff": "So that's how I hear! But whether a voice is real or fake? I can't tell. That's what Agent Echo is for…",
     "noTranscript": "…",
     "toStation2": "Meet Agent Echo"
   },
   "station2": {
     "name": "Real or Fake?",
     "caseCounter": "Case {n} of {total}",
+    "replaysLeft": "{n} listens left",
     "echoPrompt": "Listen closely. Is this a real human — or a computer?",
     "prompt1": "Case one, an easy one. Listen closely: real or fake?",
     "prompt2": "Case two. Mind the breath, slips and hiss…",
@@ -80,6 +125,7 @@
     "prompt5": "The last case. This one nearly fooled ME!",
     "noReplays": "No listens left",
     "lookListen": "The sound picture",
+    "specAlt": "The sound picture for this case: time runs left to right, low tones at the bottom, high tones at the top.",
     "scoreKicker": "Your score",
     "scoreHigh": "Wow, you have detective ears! But out there my job is harder — come and see.",
     "scoreMid": "Well done! Even real detectives hesitate sometimes. And it gets harder…",
@@ -91,21 +137,36 @@
     "itWasFake": "This voice was FAKE — made by a computer.",
     "fooledStat": "{pct}% of visitors fell for this one too!",
     "evidence": "The evidence",
-    "realExplanation": "A real human. Hear the breath and the little mistakes? Real people are never perfect — that's exactly the proof.",
-    "realExplanationB": "Real! Hear the room echo a little? A real recording never sounds perfectly clean.",
-    "realExplanationC": "A real human. The voice wobbles, hesitates and breathes. A computer forgets to fake that.",
+    "realExplanation": "A real human. Hear the breath and the little slips? Real people are rarely tidy — that's a clue in this clip. It isn't a rule: a computer can add breaths too.",
+    "realExplanationB": "Real! Hear the room echo a little? Most real recordings aren't perfectly clean. Careful, though — a spotless recording can still be real.",
+    "realExplanationC": "A real human. The voice wobbles, hesitates and breathes. Many fake voices forget that. The very best ones don't.",
+    "clueCaveat": "Everything I circle is a clue about how THIS clip was made — never proof. The newest fake voices add breaths, hiss and room echo on purpose, and plenty of genuine recordings sound impossibly clean. A clue can point you somewhere. It can't settle it.",
+    "echoDisclosure": "And I should admit something: I'm not really listening. This demo was built with the answers written down beforehand, because we made the fake clips ourselves. There is no detector running on this screen — a real one would be unsure too.",
+    "uncertaintyTitle": "Careful with your new superpower",
+    "uncertainty": "Nobody can be certain by ear — not you, not me, not the researchers who build these things. Fake voices improve every month, and the clues I showed you go away as soon as a message is compressed. So the real skill isn't hearing better. It's knowing what to do when you can't be sure — that's where we're heading.",
     "nextCase": "Next case",
     "toScore": "See your score"
   },
   "station3": {
     "name": "The compression machine",
     "echoIntro": "Listen! The machine plays the same sentence four times — flatter every time. Watch the top of the picture…",
+    "predictTitle": "First, a guess",
+    "predictBody": "The last setting is a really crackly voice message. Do you think Miko will still be able to write the sentence down?",
+    "predictYes": "Yes, he'll manage",
+    "predictNo": "No, he'll be lost",
+    "predictRight": "You called it",
+    "predictWrong": "Not what you expected",
+    "resultIdentical": "Miko wrote down exactly the same sentence at the crackliest setting as at studio quality. The words survived the squashing completely.",
+    "resultChanged": "Miko still wrote a sentence at the crackliest setting, but not quite the same one. The words mostly survived; the details didn't.",
+    "resultSilent": "At the crackliest setting Miko got nothing at all. Even the words were squashed away.",
     "conclusion": "Agent Echo's conclusion",
-    "echoAfter": "Hear that? You and Miko can still understand the sentence. But my evidence at the top is GONE. That's why crooks love voice messages!",
+    "echoAfter": "That's the catch. The words come through — but the evidence I look for lives at the top of the picture, and compression throws that away first. Which is exactly why crooks send voice messages.",
     "start": "Switch the machine on",
     "tryAll": "Listen to all four settings first",
     "clueZone": "Echo looks for evidence here",
     "clueZoneGone": "Evidence gone…",
+    "leverLabel": "Sound quality settings",
+    "specAlt": "The sound picture at the {level} setting.",
     "mikoHears": "Miko now hears",
     "mikoHearsNothing": "…almost nothing any more. The sound is too squashed!"
   },
@@ -127,11 +188,39 @@
     "sending": "Sending to Miko…",
     "mikoHeard": "Miko is listening to the message",
     "mikoVerdict": "Sounds fine to me! Message received.",
+    "youAskedFor": "What you asked for",
+    "mikoWrote": "What Miko wrote down",
     "askEcho": "Ask Agent Echo",
     "echoAlert": "ALARM! This voice came out of a computer. I can see it in the picture right away!",
+    "echoDisclosure": "Well — \"right away\" is a bit much. I know this one is fake because you just built it in the machine, and the demo was made with that written down. Nothing on this screen is analysing the sound.",
+    "noClueDescription": "This sound picture has no single spot to point at — which happens with good fakes.",
     "lesson": "Miko understood every word — but he couldn't hear it was fake. That's why you need both: a listener and a detective.",
     "noTranscript": "…",
-    "scamTip": "Real scammers do this too: they call parents with a fake voice of their child. Not sure? Call back on the real number."
+    "scamTip": "Real scammers do this too: they call parents with a fake voice of their child. Not sure? Hang up and call back on the number you already have."
+  },
+  "final": {
+    "intro": "One last mission — and it's the one that matters outside this room.",
+    "kicker": "The last test",
+    "title": "A voice you know asks for money",
+    "body": "It's late. A voice message arrives from someone you know well. It asks for money, right now. Real scammers usually add \"don't tell anyone yet\" — so that you don't check.",
+    "playMessage": "Play the message",
+    "question": "What do you do?",
+    "option": {
+      "send": "Send the money straight away — that really is their voice.",
+      "reply": "Reply to that same message and ask something only they would know.",
+      "callback": "Call the number you already have saved, and ask them yourself.",
+      "unsure": "I honestly don't know — I'd freeze."
+    },
+    "why": {
+      "send": "That's exactly what the scam is built for. A voice you love is very hard to doubt, and by the time you hear the real story the money is gone. The voice being right tells you nothing — a few seconds of speech is enough to copy it.",
+      "reply": "This one feels like checking, and it isn't. Whoever sent that message is the very thing you're unsure about, so their answer proves nothing. A fake voice can answer questions too, and someone holding a stolen phone can answer personal ones. Check on a channel YOU picked, not the one they picked.",
+      "callback": "Exactly right. Notice what you didn't have to do: spot anything. Calling back on a number you already had reaches the real person however good the fake was — which is why it still works when your ears have been fooled.",
+      "unsure": "That's an honest answer, and it's where most people are. Here's the good news: you don't have to know. Do the same thing you'd do if you were certain it was fake — hang up and call back on the number you already have. If it turns out to be real, nothing is lost."
+    },
+    "right": "Good call",
+    "wrong": "Worth knowing",
+    "takeaway": "You can't win this by listening harder. Check on a channel you chose yourself.",
+    "toDiploma": "Get your diploma"
   },
   "station5": {
     "name": "Detective Diploma",
@@ -146,24 +235,26 @@
     "badge2": "Fake-spotter",
     "badge3": "Compression expert",
     "badge4": "Fake-voice maker",
+    "badge5": "Checks first",
     "crowd": "Today: {n} visitors, {avg} correct on average.",
     "hardest": "The hardest case fooled {pct}% of everyone!",
-    "echoOutro": "Well done, detective! Remember these three things:",
-    "tip1": "Listen for breath and little mistakes. Real people are messy, computers too tidy.",
-    "tip2": "Does a familiar voice ask for money or a secret? Call back on the real number.",
+    "verifyCrowd": "{pct}% chose to call back and check.",
+    "echoOutro": "Well done, detective! The first one matters most:",
+    "tip1": "Does a familiar voice ask for money or a secret? Hang up and call back on the number you already have. That works even when the fake is perfect.",
+    "tip2": "Breath, hiss and little mistakes can be clues — but they're never proof. The best fakes have them too.",
     "tip3": "Clever people get fooled too. Checking is smart, not silly.",
     "restart": "Start again"
   },
   "clue": {
-    "tier1": "Hear how smooth this voice is? Look in the box: no wobbles, no mistakes. Real voices always tremble a little.",
-    "tier2": "Look in the box: completely empty and silent. No breath, no hiss. A real recording is never this clean.",
-    "tier3": "Almost real! But the stripes in the box run too straight and smooth. Real voices tremble.",
-    "tier4": "Well made — but the box gives it away. Between the words it's TOO quiet.",
-    "tier5": "Even I looked twice! But look in the box: nothing messy, nothing human. Too perfect.",
-    "smoothHarmonics": "Look how smooth and even these stripes are. A real voice always wobbles a little — this is too perfect.",
-    "noBreath": "Where's the breath? People breathe in before they speak. This voice just starts out of nowhere. Suspicious!",
-    "hfCutoff": "Look at the top: the high sounds stop suddenly, like there's a lid on them. The computer forgot the highest tones.",
-    "tooClean": "This one was hard! No lip smacks, no hiss, no room echo. Too clean — that's what gives the computer away."
+    "tier1": "Hear how smooth this voice is? Look in the box: barely any wobble. That's my clue here — most real voices tremble a little. Newer fake ones can tremble too.",
+    "tier2": "Look in the box: empty and silent. No breath, no hiss. That's what tipped me off in this clip — though a cleaned-up real recording can look just as bare.",
+    "tier3": "Almost real! But the stripes in the box run very straight and even. That's a clue in this one. A straight stripe on its own never decides it.",
+    "tier4": "Well made — look how silent it goes between the words. That's the clue I used. A quiet room can do the same thing to a real recording.",
+    "tier5": "Even I looked twice. In the box: nothing messy, nothing human. A clue, not a verdict — this is roughly where my eyes stop being useful.",
+    "smoothHarmonics": "Look how smooth and even these stripes are. A real voice usually wobbles a little, so this is worth a second look — but \"too smooth\" is a hint, not an answer.",
+    "noBreath": "Where's the breath? People usually breathe in before they speak, and this voice just starts. Suspicious — although plenty of real clips get trimmed right up to the first word.",
+    "hfCutoff": "Look at the top: the high sounds stop suddenly, like there's a lid on them. That happens with some fakes — and with every phone call, which is why this clue disappears in mission 3.",
+    "tooClean": "This one was hard! No lip smacks, no hiss, no room echo. Too clean is a clue — a studio microphone can be too clean as well."
   },
   "voice": {
     "nl_female": "Woman",

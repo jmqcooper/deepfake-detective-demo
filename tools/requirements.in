@@ -1,0 +1,8 @@
+# Direct dependencies for the local media pipeline. Compile with:
+#   uv pip compile tools/requirements.in -o tools/requirements.txt --generate-hashes --python-version 3.12
+datasets==4.8.2
+huggingface-hub==1.4.1
+httpx==0.28.1
+numpy==2.4.2
+Pillow==12.3.0
+requests==2.32.4

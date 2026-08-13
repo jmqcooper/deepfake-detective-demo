@@ -84,6 +84,30 @@ h3 {
   font-variant-numeric: tabular-nums;
 }
 
+/* Nothing on this screen is allowed to scroll sideways. Every station is a
+   column on a phone, and a single 140-bar waveform used to push the whole page
+   40% wider than a 320px viewport — which on a kiosk is not "scroll to see it",
+   it is "half the exhibit is off the glass". */
+html {
+  overflow-x: hidden;
+}
+
+/* ----------------------------------------------------------------- focus --- */
+
+/* One loud, consistent focus ring. The default UA outline disappears entirely
+   against these surfaces, and a museum tablet may well be driven from a
+   keyboard, a switch or a bluetooth remote rather than a fingertip. */
+:where(a, button, [role="slider"], [tabindex]):focus-visible {
+  outline: 3px solid var(--color-echo-300);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Focus must never be invisible just because something above it clips. */
+:focus-visible {
+  scroll-margin: 1rem;
+}
+
 /* ---------------------------------------------------------------- motion --- */
 
 /* Entrances are split and staggered, never one big container pop. */
@@ -202,17 +226,6 @@ h3 {
   animation: halo 2.2s var(--ease-out-soft) infinite;
 }
 
-/* Station 1's black box: one calm activation pulse per layer, left to right. */
-@keyframes nodepulse {
-  0%,
-  100% {
-    opacity: 0.25;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
 /* Audio playing: bars that actually respond to nothing but still read as sound. */
 @keyframes bar {
   0%,
@@ -224,12 +237,20 @@ h3 {
   }
 }
 
+/* Everything that animates uses `both` fill, so collapsing the duration leaves
+   the element in its FINAL state rather than hiding it. That matters more than
+   it sounds: several reveals are `.rise` elements that start at opacity 0, and
+   a reduced-motion visitor who lost them would lose the lesson, not the polish.
+   Timed progression is handled in JS (`useBeat`, `Typewriter`), which collapses
+   to "show it now" under the same query. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

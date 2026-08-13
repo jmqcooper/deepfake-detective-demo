@@ -1,117 +1,98 @@
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, normalize, sep } from "node:path";
 
-import { z } from "zod";
+import {
+  manifestAssets,
+  parseManifest,
+  type Clip,
+  type ClipLabel,
+  type Manifest,
+} from "@/lib/manifest-schema";
 
-const fractionSchema = z.number().min(0).max(1);
+export type { Manifest } from "@/lib/manifest-schema";
+export { manifestSchema, parseManifest } from "@/lib/manifest-schema";
 
-export const manifestSchema = z
-  .object({
-    version: z.literal(1),
-    generatedAt: z.iso.datetime({ offset: true }),
-    source: z.string().min(1),
-    clips: z.array(
-      z
-        .object({
-          id: z.string().min(1),
-          label: z.enum(["real", "fake"]),
-          audio: z.string().min(1),
-          durationSec: z.number().min(3).max(8),
-          difficulty: z.number().int().min(1).max(5),
-          spectrogram: z
-            .object({
-              image: z.string().min(1),
-              bins: z.number().int().positive(),
-              frames: z.number().int().positive(),
-              maxFreqHz: z.number().int().positive(),
-            })
-            .strict(),
-          clue: z
-            .object({
-              key: z.string().min(1),
-              box: z.tuple([fractionSchema, fractionSchema, fractionSchema, fractionSchema]),
-            })
-            .strict()
-            .nullable(),
-          provenance: z
-            .object({
-              sourceId: z.string().min(1),
-              attack: z.string().nullable(),
-              codec: z.string().nullable(),
-            })
-            .strict(),
-          transcript: z.string(),
-        })
-        .strict(),
-    ),
-    codecLadder: z.array(
-      z
-        .object({
-          id: z.string().min(1),
-          labelKey: z.string().min(1),
-          audio: z.string().min(1),
-          spectrogram: z.string().min(1),
-          bitrateKbps: z.number().int().positive().nullable(),
-          transcript: z.string(),
-        })
-        .strict(),
-    ),
-    fakeFactory: z
-      .object({
-        available: z.boolean(),
-        sentences: z.array(
-          z
-            .object({
-              id: z.string().min(1),
-              textKey: z.string().min(1),
-              scam: z.boolean(),
-            })
-            .strict(),
-        ),
-        voices: z.array(
-          z
-            .object({
-              id: z.string().min(1),
-              nameKey: z.string().min(1),
-              avatar: z.string().min(1),
-            })
-            .strict(),
-        ),
-        langs: z.array(z.enum(["nl", "en"])),
-        audioPattern: z.string().min(1),
-      })
-      .strict(),
-  })
-  .strict();
+export type ManifestState =
+  | { status: "ready"; manifest: Manifest }
+  | { status: "missing" }
+  | { status: "malformed"; problems: string[] };
 
-export type Manifest = z.infer<typeof manifestSchema>;
+const SAMPLES_ROOT = () => join(process.cwd(), "public", "samples");
 
-let cachedManifest: Promise<Manifest | null> | undefined;
-let didLogManifestError = false;
+let cached: Promise<ManifestState> | undefined;
+let didLog = false;
 
-async function readManifest(): Promise<Manifest | null> {
-  try {
-    const path = join(process.cwd(), "public", "samples", "manifest.json");
-    const contents = await readFile(path, "utf8");
-    const parsed = manifestSchema.safeParse(JSON.parse(contents) as unknown);
-    if (!parsed.success) {
-      if (!didLogManifestError) {
-        didLogManifestError = true;
-        console.warn("Sample manifest is invalid; treating it as unavailable.", parsed.error);
-      }
-      return null;
-    }
-    return parsed.data;
-  } catch (error: unknown) {
-    if (!didLogManifestError) {
-      didLogManifestError = true;
-      console.warn("Sample manifest is unavailable; run the sample pipeline first.", error);
-    }
-    return null;
-  }
+function logOnce(message: string, detail?: unknown): void {
+  if (didLog) return;
+  didLog = true;
+  console.warn(message, detail);
 }
 
-export function loadManifest(): Promise<Manifest | null> {
-  cachedManifest ??= readManifest();
-  return cachedManifest;
+async function readManifest(): Promise<ManifestState> {
+  let contents: string;
+  try {
+    contents = await readFile(join(SAMPLES_ROOT(), "manifest.json"), "utf8");
+  } catch (error: unknown) {
+    logOnce("Sample manifest is unavailable; run the sample pipeline first.", error);
+    return { status: "missing" };
+  }
+
+  let decoded: unknown;
+  try {
+    decoded = JSON.parse(contents);
+  } catch (error: unknown) {
+    logOnce("Sample manifest is not valid JSON; treating the pack as unusable.", error);
+    return { status: "malformed", problems: ["(root): not valid JSON"] };
+  }
+
+  const parsed = parseManifest(decoded);
+  if (!parsed.ok) {
+    logOnce("Sample manifest does not match the contract in SPEC.md.", parsed.problems);
+    return { status: "malformed", problems: parsed.problems };
+  }
+  return { status: "ready", manifest: parsed.manifest };
+}
+
+/** Cached for the life of the process — the pack is generated offline. */
+export function loadManifestState(): Promise<ManifestState> {
+  cached ??= readManifest();
+  return cached;
+}
+
+export async function loadManifest(): Promise<Manifest | null> {
+  const state = await loadManifestState();
+  return state.status === "ready" ? state.manifest : null;
+}
+
+/** Test seam: forget the cached read (also used after a pack is regenerated). */
+export function resetManifestCache(): void {
+  cached = undefined;
+  didLog = false;
+}
+
+export async function findClip(clipId: string): Promise<Clip | null> {
+  const manifest = await loadManifest();
+  if (!manifest) return null;
+  return manifest.clips.find((clip) => clip.id === clipId) ?? null;
+}
+
+/**
+ * The server's answer to "is this clip real or fake?". The client never gets to
+ * assert it — that is the whole point of resolving the label here.
+ */
+export async function clipLabel(clipId: string): Promise<ClipLabel | null> {
+  const clip = await findClip(clipId);
+  return clip?.label ?? null;
+}
+
+/** Maps a manifest asset path to its file on disk, refusing to escape /samples. */
+export function assetFilePath(assetPath: string): string | null {
+  if (!assetPath.startsWith("/samples/")) return null;
+  const root = SAMPLES_ROOT();
+  const resolved = normalize(join(root, assetPath.slice("/samples/".length)));
+  return resolved === root || resolved.startsWith(root + sep) ? resolved : null;
+}
+
+export function assetPathsOf(manifest: Manifest): string[] {
+  return manifestAssets(manifest);
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the museum sample bundle from paired Dutch MLS/Voxtral audio."""
+"""Build and release-check the museum's bilingual sample bundle."""
 
 from __future__ import annotations
 
@@ -38,6 +38,9 @@ N_FFT = 1_024
 HOP_LENGTH = 256
 TTS_MODEL = "mistralai/Voxtral-4B-TTS-2603"
 ASR_MODEL = "mistralai/Voxtral-Mini-4B-Realtime-2602"
+TTS_REVISION = "b81be46c3777f88621676791b512bb01dc1cb970"
+ASR_REVISION = "2769294da9567371363522aac9bbcfdd19447add"
+COMMON_VOICE_REVISION = "8262c16bf297c87a9cd88c51997c4758ed7a8ba2"
 # The factory ships exactly one female and one male voice per language. The
 # language-neutral extras (cheerful_female et al.) carry a noticeable
 # non-native accent on Dutch — museum feedback called it "almost German" —
@@ -117,6 +120,10 @@ def load_dutch_pack(cache: Path) -> dict[str, Any]:
         raise PipelineError(f"fakes.json model must be exactly {TTS_MODEL!r}.")
     if transcripts_doc.get("model") != ASR_MODEL:
         raise PipelineError(f"transcripts.json model must be exactly {ASR_MODEL!r}.")
+    if fakes_doc.get("modelRevision") not in (None, TTS_REVISION):
+        raise PipelineError(f"fakes.json modelRevision must be exactly {TTS_REVISION!r}.")
+    if transcripts_doc.get("modelRevision") not in (None, ASR_REVISION):
+        raise PipelineError(f"transcripts.json modelRevision must be exactly {ASR_REVISION!r}.")
 
     sentence_by_id: dict[str, dict[str, Any]] = {}
     for sentence in sentences:
@@ -182,7 +189,9 @@ def load_dutch_pack(cache: Path) -> dict[str, Any]:
         "fakes": fake_by_id,
         "transcripts": transcripts,
         "ttsModel": fakes_doc.get("model"),
+        "ttsRevision": fakes_doc.get("modelRevision"),
         "asrModel": transcripts_doc.get("model"),
+        "asrRevision": transcripts_doc.get("modelRevision"),
         "selectedIds": selected_ids,
         "station1Id": station1_id,
         "ladderId": ladder_id,
@@ -628,12 +637,10 @@ def manifest_clip(
     with_clue: bool = True,
     lang: str = "nl",
 ) -> dict[str, Any]:
-    # One clue narrative per difficulty tier, so Echo's reveal grows with the
-    # rounds instead of repeating "this one was hard" from round one. Every tier
-    # text describes the same family of tell — synthetic speech is too clean and
-    # too even — which genuinely holds for this TTS; we deliberately avoid
-    # per-clip claims (a missing breath, a spectral cutoff) that a specific clip
-    # might contradict.
+    # A post-verdict observation for this particular clip, never a classifier.
+    # Real recordings can look clean and synthetic recordings can contain noise,
+    # so the UI presents this highlight as one fallible clue and sends visitors
+    # to independent verification for consequential decisions.
     clue_key = f"clue.tier{difficulty}" if label == "fake" and with_clue else None
     return {
         "id": clip_id,
@@ -666,15 +673,41 @@ def load_case_packs() -> list[dict[str, Any]]:
     integrity fixture.
     """
     packs = []
-    for lang in ("nl", "en"):
+    present = [
+        lang for lang in ("nl", "en")
+        if (ROOT / f"tools/.cache/pack-{lang}/pack.json").is_file()
+    ]
+    if len(present) == 1:
+        missing = "en" if present[0] == "nl" else "nl"
+        raise PipelineError(
+            "The v2 exhibit pack is bilingual and cannot be built partially: "
+            f"found {present[0]!r}, missing {missing!r}. Build both pack-nl and pack-en."
+        )
+    for lang in present:
         pack_dir = ROOT / f"tools/.cache/pack-{lang}"
-        if (pack_dir / "pack.json").is_file():
-            doc = load_json(pack_dir / "pack.json")
-            cases = doc.get("cases")
-            if not isinstance(cases, list) or len(cases) != 10:
-                raise PipelineError(f"{pack_dir}/pack.json must contain exactly 10 cases.")
-            doc["_dir"] = pack_dir
-            packs.append(doc)
+        doc = load_json(pack_dir / "pack.json")
+        cases = doc.get("cases")
+        if not isinstance(cases, list) or len(cases) != 10:
+            raise PipelineError(f"{pack_dir}/pack.json must contain exactly 10 cases.")
+        if doc.get("lang") != lang:
+            raise PipelineError(f"{pack_dir}/pack.json must declare lang={lang!r}.")
+        for field in ("source", "license", "ttsModel", "asrModel"):
+            if not isinstance(doc.get(field), str) or not doc[field].strip():
+                raise PipelineError(f"{pack_dir}/pack.json is missing non-empty {field!r}.")
+        if doc.get("ttsModel") != TTS_MODEL or doc.get("ttsRevision") != TTS_REVISION:
+            raise PipelineError(f"{pack_dir}/pack.json uses an unapproved TTS model/revision.")
+        if doc.get("asrModel") != ASR_MODEL or doc.get("asrRevision") != ASR_REVISION:
+            raise PipelineError(f"{pack_dir}/pack.json uses an unapproved ASR model/revision.")
+        if doc.get("sourceRevision") != COMMON_VOICE_REVISION:
+            raise PipelineError(f"{pack_dir}/pack.json uses an unapproved source revision.")
+        for index, case in enumerate(cases):
+            digest = case.get("sourceSha256")
+            if not isinstance(digest, str) or re.fullmatch(r"[a-f0-9]{64}", digest) is None:
+                raise PipelineError(
+                    f"{pack_dir}/pack.json case {index} is missing its source SHA-256."
+                )
+        doc["_dir"] = pack_dir
+        packs.append(doc)
     return packs
 
 
@@ -695,13 +728,22 @@ def ensure_dirs(out: Path) -> None:
     (out / "factory" / ".gitkeep").touch()
 
 
-def verify_manifest_contract(all_clips: Sequence[dict[str, Any]]) -> None:
+def verify_manifest_contract(
+    all_clips: Sequence[dict[str, Any]], *, require_bilingual: bool = False,
+    require_transcripts: bool = True,
+) -> None:
     failures: list[str] = []
     case_records = [
         clip for clip in all_clips
         if re.fullmatch(r"case(-[a-z]{2})?-\d{2}", str(clip.get("id", "")))
     ]
     langs = sorted({clip.get("lang", "nl") for clip in case_records}) or ["nl"]
+    if require_bilingual and langs != ["en", "nl"]:
+        failures.append("the exhibit manifest must contain complete English and Dutch case pools")
+    if require_bilingual:
+        clip_ids = {clip.get("id") for clip in all_clips}
+        if not {"station1", "station1-en"}.issubset(clip_ids):
+            failures.append("the exhibit manifest must contain Dutch and English Station 1 clips")
     for lang in langs:
         group = [clip for clip in case_records if clip.get("lang", "nl") == lang]
         expected_ids = [case_id(lang, index) for index in range(1, 11)]
@@ -723,12 +765,187 @@ def verify_manifest_contract(all_clips: Sequence[dict[str, Any]]) -> None:
         }
         if real_sources & fake_sources:
             failures.append(f"[{lang}] real and fake case pools reuse a sentence id")
-    if any("transcript" not in clip or not isinstance(clip["transcript"], str) for clip in all_clips):
-        failures.append("every clip must contain a Voxtral ASR transcript string")
+    if require_transcripts and any(
+        not isinstance(clip.get("transcript"), str) or not clip["transcript"].strip()
+        for clip in all_clips
+    ):
+        failures.append("every clip must contain a non-empty delivered-audio ASR transcript")
     if any(clip.get("durationSec") != CASE_DURATION_SEC for clip in case_records):
         failures.append("every case manifest record must declare a 4.0 second trim")
     if failures:
         raise PipelineError("Manifest integrity verification FAILED:\n  - " + "\n  - ".join(failures))
+
+
+def asset_path(out: Path, public_path: object, owner: str) -> Path:
+    """Resolve one /samples URL without allowing it to escape the sample root."""
+    if not isinstance(public_path, str) or not public_path.startswith("/samples/"):
+        raise PipelineError(f"{owner} must be an absolute /samples/ path.")
+    relative = Path(public_path.removeprefix("/samples/"))
+    if relative.is_absolute() or ".." in relative.parts:
+        raise PipelineError(f"{owner} contains an unsafe path: {public_path!r}.")
+    resolved = (out / relative).resolve()
+    try:
+        resolved.relative_to(out.resolve())
+    except ValueError as exc:
+        raise PipelineError(f"{owner} escapes the sample directory: {public_path!r}.") from exc
+    return resolved
+
+
+def verify_image(path: Path, owner: str) -> None:
+    if not path.is_file() or path.stat().st_size == 0:
+        raise PipelineError(f"Missing or empty image for {owner}: {path}")
+    try:
+        with Image.open(path) as image:
+            image.verify()
+    except (OSError, ValueError) as exc:
+        raise PipelineError(f"Unreadable image for {owner}: {path}: {exc}") from exc
+
+
+def verify_audio(ffprobe: str, path: Path, owner: str) -> None:
+    if not path.is_file() or path.stat().st_size == 0:
+        raise PipelineError(f"Missing or empty audio for {owner}: {path}")
+    result = run(
+        [
+            ffprobe, "-v", "error", "-select_streams", "a:0", "-show_entries",
+            "stream=codec_name,sample_rate,channels:format=duration", "-of", "json", str(path),
+        ],
+        purpose=f"decoding check for {owner}",
+    )
+    try:
+        doc = json.loads(result.stdout)
+        stream = doc["streams"][0]
+        duration = float(doc["format"]["duration"])
+        if not stream.get("codec_name") or int(stream["sample_rate"]) <= 0:
+            raise ValueError("invalid codec or sample rate")
+        if int(stream["channels"]) != CHANNELS or duration <= 0:
+            raise ValueError("audio must be non-empty mono audio")
+    except (KeyError, IndexError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        raise PipelineError(f"Invalid audio for {owner}: {path}: {exc}") from exc
+
+
+def verify_pack_assets(
+    ffprobe: str, out: Path, manifest: dict[str, Any], *, require_bilingual: bool
+) -> None:
+    """Release-check every referenced asset and every bilingual contract surface."""
+    failures: list[str] = []
+    clips = manifest.get("clips")
+    ladder = manifest.get("codecLadder")
+    factory = manifest.get("fakeFactory")
+    if not isinstance(clips, list) or not isinstance(ladder, list) or not isinstance(factory, dict):
+        raise PipelineError("Manifest must contain clips, codecLadder, and fakeFactory.")
+
+    seen_assets: set[Path] = set()
+
+    def check_asset(value: object, owner: str, kind: str) -> None:
+        try:
+            path = asset_path(out, value, owner)
+            if path in seen_assets:
+                failures.append(f"{owner} reuses asset {value!r}")
+                return
+            seen_assets.add(path)
+            if kind == "audio":
+                verify_audio(ffprobe, path, owner)
+            else:
+                verify_image(path, owner)
+        except PipelineError as exc:
+            failures.append(str(exc))
+
+    for index, clip in enumerate(clips):
+        if not isinstance(clip, dict):
+            failures.append(f"clips[{index}] must be an object")
+            continue
+        owner = f"clip {clip.get('id', index)!r}"
+        check_asset(clip.get("audio"), f"{owner}.audio", "audio")
+        spectrogram = clip.get("spectrogram")
+        if not isinstance(spectrogram, dict):
+            failures.append(f"{owner}.spectrogram must be an object")
+        else:
+            check_asset(spectrogram.get("image"), f"{owner}.spectrogram.image", "image")
+
+    expected_rungs = ["studio", "phone", "whatsapp", "terrible"]
+    if [rung.get("id") for rung in ladder if isinstance(rung, dict)] != expected_rungs:
+        failures.append(f"codecLadder must contain {expected_rungs!r} in order")
+    for index, rung in enumerate(ladder):
+        if not isinstance(rung, dict):
+            failures.append(f"codecLadder[{index}] must be an object")
+            continue
+        owner = f"codec rung {rung.get('id', index)!r}"
+        for suffix, kind in (("audio", "audio"), ("spectrogram", "image")):
+            check_asset(rung.get(suffix), f"{owner}.{suffix}", kind)
+        if not isinstance(rung.get("transcript"), str) or not rung["transcript"].strip():
+            failures.append(f"{owner}.transcript must be non-empty")
+        if require_bilingual:
+            for suffix, kind in (("audioEn", "audio"), ("spectrogramEn", "image")):
+                check_asset(rung.get(suffix), f"{owner}.{suffix}", kind)
+            if not isinstance(rung.get("transcriptEn"), str) or not rung["transcriptEn"].strip():
+                failures.append(f"{owner}.transcriptEn must be non-empty")
+
+    if require_bilingual and not factory.get("available"):
+        failures.append("the exhibit manifest requires a complete bilingual fakeFactory")
+    if factory.get("available"):
+        factory_clips = factory.get("clips")
+        advertised = factory.get("sentences")
+        advertised_ids: set[str] = set()
+        if not isinstance(advertised, list) or not advertised:
+            failures.append("fakeFactory.available requires a non-empty sentences array")
+        else:
+            for index, sentence in enumerate(advertised):
+                if (
+                    not isinstance(sentence, dict)
+                    or not isinstance(sentence.get("id"), str)
+                    or not sentence["id"]
+                    or not isinstance(sentence.get("text"), str)
+                    or not sentence["text"].strip()
+                    or not isinstance(sentence.get("scam"), bool)
+                ):
+                    failures.append(f"fakeFactory.sentences[{index}] is invalid")
+                    continue
+                if sentence["id"] in advertised_ids:
+                    failures.append(f"duplicate fakeFactory sentence id {sentence['id']!r}")
+                advertised_ids.add(sentence["id"])
+        if not isinstance(factory_clips, list) or not factory_clips:
+            failures.append("fakeFactory.available requires a non-empty clips array")
+        else:
+            grid: dict[str, dict[str, set[str]]] = {}
+            combinations: set[tuple[str, str, str]] = set()
+            for index, clip in enumerate(factory_clips):
+                if not isinstance(clip, dict):
+                    failures.append(f"fakeFactory.clips[{index}] must be an object")
+                    continue
+                owner = f"factory clip {clip.get('id', index)!r}"
+                lang, sentence, voice = clip.get("lang"), clip.get("sentenceId"), clip.get("voice")
+                if not all(isinstance(value, str) and value for value in (lang, sentence, voice)):
+                    failures.append(f"{owner} needs non-empty lang, sentenceId, and voice")
+                else:
+                    combination = (lang, sentence, voice)
+                    if combination in combinations:
+                        failures.append(f"duplicate fakeFactory combination {combination!r}")
+                    combinations.add(combination)
+                    grid.setdefault(lang, {}).setdefault(sentence, set()).add(voice)
+                if not isinstance(clip.get("text"), str) or not clip["text"].strip():
+                    failures.append(f"{owner}.text must be non-empty")
+                if not isinstance(clip.get("transcript"), str) or not clip["transcript"].strip():
+                    failures.append(f"{owner}.transcript must be non-empty")
+                check_asset(clip.get("audio"), f"{owner}.audio", "audio")
+                check_asset(clip.get("spectrogram"), f"{owner}.spectrogram", "image")
+            if require_bilingual and sorted(grid) != ["en", "nl"]:
+                failures.append("fakeFactory must contain complete English and Dutch grids")
+            sentence_sets = {lang: set(sentences) for lang, sentences in grid.items()}
+            if sentence_sets and len({frozenset(values) for values in sentence_sets.values()}) != 1:
+                failures.append("fakeFactory languages must expose the same sentence ids")
+            for lang, sentence_ids in sentence_sets.items():
+                if advertised_ids and sentence_ids != advertised_ids:
+                    failures.append(
+                        f"fakeFactory[{lang}] sentence ids do not match fakeFactory.sentences"
+                    )
+            for lang, sentences in grid.items():
+                voice_sets = {frozenset(voices) for voices in sentences.values()}
+                if len(voice_sets) != 1:
+                    failures.append(f"fakeFactory[{lang}] is not a complete sentence × voice grid")
+
+    if failures:
+        raise PipelineError("Full sample-pack verification FAILED:\n  - " + "\n  - ".join(failures))
+    print(f"PASS: all {len(seen_assets)} referenced media assets decode and the pack is complete.\n")
 
 
 def build(args: argparse.Namespace) -> Path:
@@ -783,7 +1000,11 @@ def build(args: argparse.Namespace) -> Path:
             ))
             rows.append((s1_id, "clip", s1_label, f"{db.shape[1]} frames"))
 
-        case_packs = load_case_packs()
+        # A caller-supplied cache is an isolated fixture/rebuild input. Never
+        # silently splice globally cached v2 cases into it: that made clean CI
+        # and local fixture results depend on whatever happened to be on disk.
+        default_cache = (ROOT / "tools/.cache/dutch").resolve()
+        case_packs = load_case_packs() if cache == default_cache else []
         if case_packs:
             # v2: Common Voice reals + native-voice fakes, one pool per language.
             for cpack in case_packs:
@@ -801,10 +1022,13 @@ def build(args: argparse.Namespace) -> Path:
                     write_spectrogram(db, out / "spec" / f"{clip_id}.png")
                     # Filled by the delivered-audio ASR pass; empty until merged.
                     transcript = case.get("deliveredTranscript") or ""
-                    clips.append(manifest_clip(
+                    case_clip = manifest_clip(
                         clip_id, case["sourceId"], case["label"], case["difficulty"],
                         db, transcript, cpack.get("ttsModel"), lang=lang,
-                    ))
+                    )
+                    if case.get("sourceSha256"):
+                        case_clip["provenance"]["sourceSha256"] = case["sourceSha256"]
+                    clips.append(case_clip)
                     rows.append((clip_id, "clip", case["label"], f"{db.shape[1]} frames"))
         else:
             # Legacy MLS-paired pool (kept for the synthetic integrity fixture).
@@ -926,15 +1150,44 @@ def build(args: argparse.Namespace) -> Path:
     # the ASR transcribes them word-for-word, so the lesson lands because it is real.
     factory = build_factory(ffmpeg, cache, out, pack["transcripts"])
 
+    if case_packs:
+        real_sources = " + ".join(
+            f"{cpack['source']} [{cpack['license']}]" for cpack in case_packs
+        )
+    else:
+        real_sources = f"{pack['source']} [{pack['license']}]"
     manifest = {
         "version": 1,
         "generatedAt": iso_generated_at(cache / "sentences.json"),
-        "source": f"{pack['source']} (real) + {pack['ttsModel']} (fake)",
+        "source": f"{real_sources} (real) + {pack['ttsModel']} (synthetic)",
+        "generation": {
+            "ttsModel": pack["ttsModel"],
+            "ttsRevision": pack.get("ttsRevision"),
+            "ttsLicense": "CC BY-NC 4.0",
+            "asrModel": pack["asrModel"],
+            "asrRevision": pack.get("asrRevision"),
+            "asrLicense": "Apache-2.0",
+            "caseSources": [
+                {
+                    "lang": cpack["lang"],
+                    "source": cpack["source"],
+                    "license": cpack["license"],
+                    **({"revision": cpack["sourceRevision"]} if cpack.get("sourceRevision") else {}),
+                }
+                for cpack in case_packs
+            ] if case_packs else [{
+                "lang": "nl", "source": pack["source"], "license": pack["license"]
+            }],
+        },
         "clips": clips,
         "codecLadder": codec_ladder,
         "fakeFactory": factory,
     }
-    verify_manifest_contract(clips)
+    verify_manifest_contract(
+        clips,
+        require_bilingual=bool(case_packs),
+        require_transcripts=False,
+    )
     manifest_path = out / "manifest.json"
     temporary_manifest = out / ".manifest.json.tmp"
     temporary_manifest.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -960,7 +1213,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--verify-only",
         action="store_true",
-        help="verify the case clips already referenced by the output manifest without rebuilding",
+        help="release-check the entire sample pack already referenced by the manifest",
     )
     return parser.parse_args()
 
@@ -981,7 +1234,13 @@ def verify_existing(args: argparse.Namespace) -> None:
         ]
     except (OSError, KeyError, TypeError, json.JSONDecodeError) as exc:
         raise PipelineError(f"Could not read case clips from {manifest_path}: {exc}") from exc
-    verify_manifest_contract(all_clips)
+    case_langs = {str(clip.get("lang", "nl")) for clip in all_clips
+                  if str(clip.get("id", "")).startswith("case-")}
+    source = str(manifest.get("source", ""))
+    is_v2 = "Common Voice" in source or case_langs == {"en", "nl"}
+    require_bilingual = is_v2
+    verify_manifest_contract(all_clips, require_bilingual=require_bilingual)
+    verify_pack_assets(ffprobe, out, manifest, require_bilingual=require_bilingual)
     verify_case_clips(ffprobe, ffmpeg, clips)
 
 

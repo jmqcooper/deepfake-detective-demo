@@ -44,7 +44,9 @@ dev server at <http://localhost:3000>.
 make check
 ```
 
-Runs the frontend lint, the production build, and the sample-pack verifier. See
+Provisions the locked Python environment, enforces Node 22/native SQLite parity, runs unit
+tests, lint, typecheck and the production build, then decodes and validates the complete
+sample pack. See
 [tools/README.md](tools/README.md) for the individual commands.
 
 ## Run with Docker (recommended)
@@ -63,31 +65,34 @@ local network.
   [Docker Engine](https://docs.docker.com/engine/install/) on a Linux host.
 - [Docker Compose v2](https://docs.docker.com/compose/install/) (included with
   Docker Desktop; install the Compose plugin with Docker Engine).
-- `make`, [Python 3.12](https://www.python.org/downloads/), and
-  [FFmpeg/ffprobe](https://ffmpeg.org/download.html) with libmp3lame support for
-  the one-time generation of the synthetic demo audio before the image is built.
 
 Node.js is **not** required on the host for this route: the Docker image builds
-and contains the Node.js application. Once an image has been built, a deployment
-host only needs a compatible container runtime, port `3000`, and (when statistics
-must survive restarts) a persistent volume mounted at `/app/data`.
+and contains the Node.js application and generates a synthetic demo audio pack
+when no exhibition pack is present. Python, FFmpeg, and `make` are also contained
+in or unnecessary for the Docker build. The host only needs Docker, port `3000`,
+and (when statistics must survive restarts) a persistent volume at `/app/data`.
 
 ### Start the demo
 
 ```bash
 git clone https://github.com/jmqcooper/deepfake-detective-demo.git
 cd deepfake-detective-demo
-make docker
+docker compose up -d --build
 ```
 
 Open <http://localhost:3000>. Check the deployment with `docker compose ps` and
 view logs with `docker compose logs -f web`. Stop it with `docker compose down`;
 the named statistics volume is retained.
 
-`make docker` ensures a sample pack exists (the build context is `web/`, so it must already
-contain one), then runs `docker compose up -d --build`. SQLite persists to a
-mounted volume. For a stateless host set `STATS_DRIVER=memory`;
-stats then degrade to "no data yet" and never crash the kiosk.
+On a fresh clone, the image build creates a small synthetic audio fixture so the
+complete teaching flow works immediately. If `web/public/samples/manifest.json`
+already exists, that exhibition pack is included instead. The root build context
+is allow-listed, so local model caches, virtualenvs and databases never reach
+Docker. SQLite
+persists to a named volume and the container exposes a `/api/health` health
+check. For ephemeral counters set `STATS_DRIVER=memory`; to disable reporting
+entirely set `STATS_DRIVER=none`, which reports degraded health without stopping
+the teaching flow.
 
 ## Research-media regeneration (optional)
 
@@ -100,22 +105,50 @@ That pipeline is not required to develop or run the app.
 ## Architecture
 
 ```
-web/src/app/          # Next.js pages + API routes (events, stats)
-web/src/components/    # DemoShell + stations/ (the five station UIs)
+web/src/app/           # Next.js pages + API routes (events, stats, health)
+web/src/components/    # DemoShell + kiosk chrome + stations/ (the five station UIs)
 web/src/i18n/          # nl.json / en.json — ALL user-visible copy lives here
-web/src/lib/           # manifest loader, stats, SQLite
+web/src/lib/           # the contracts and the logic: manifest schema, event
+                       # handling, stats, kiosk flow, audio state, i18n rules
+web/tests/             # node --test, no test framework to install
 web/public/samples/    # GENERATED, gitignored — the sample pack + manifest.json
 tools/                 # offline media pipeline (Python)
 SPEC.md                # API, data and manifest contracts — the source of truth
 docker-compose.yml     # deployment
 ```
 
+`web/src/lib/` is React-free on purpose. Anything that has to be *correct* rather
+than merely rendered — whether a guess was right, which clip a session has already
+answered, when the kiosk resets — lives there and is covered by `npm test`. The
+stations stay thin.
+
+## Honesty
+
+The demo is about deception, so it does not practise any. Spectrogram tells are
+presented as clues about the clips in the pack, never as a test that works on the
+next voice message: modern fakes add breath and room noise, and plenty of genuine
+recordings sound spotless. Agent Echo is theatre with a script, and says so —
+the pack ships with prepared labels because we generated the fakes ourselves, and
+nothing on screen analyses audio. Every transcript is the recogniser's real output,
+mistakes included.
+
+Which is why the demo ends on a scenario rather than a score: a voice you know asks
+for money, and the answer is to hang up and call back on a number you already have.
+That works even when your ears have been fooled — and after four stations, a visitor
+knows they can be.
+
 ## Privacy
 
 No microphone access, no audio upload, no personal data, no cookies. The only stored
 data is an anonymous per-clip counter plus a session score, so the demo can say "71%
 of visitors were fooled by this one". Session IDs are random, in-memory, and never
-correlated across visits.
+correlated across visits; a reset forgets the id on the server as well as in the
+browser. Event retention defaults to 90 days and can be changed with
+`STATS_RETENTION_DAYS`.
+
+The rate limiter respects this too: it is keyed on the anonymous session id the
+request already carries, never on a client address — hashed or otherwise. No IP is
+read, logged or stored anywhere in the app.
 
 ## Licensing
 
@@ -137,3 +170,4 @@ See [NOTICE](NOTICE) for the full attribution notice.
 - [tools/README.md](tools/README.md) — the offline media pipeline.
 - [SPEC.md](SPEC.md) — API, data and manifest contracts.
 - [NOTICE](NOTICE) — attribution and licensing notice.
+- [Museum operations](docs/MUSEUM_OPERATIONS.md) — opening checks, kiosk recovery, backups, retention and reset.
