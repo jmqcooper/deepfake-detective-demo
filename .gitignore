@@ -16,3 +16,15 @@ web/data/
 .venv/
 __pycache__/
 *.py[cod]
+
+# Local editor and coding-assistant metadata
+.vscode/
+.idea/
+.cursor/
+.claude/
+.agents/
+.codex/
+.t3/
+**/AGENTS.md
+**/CLAUDE.md
+**/CLAUDE.MD
