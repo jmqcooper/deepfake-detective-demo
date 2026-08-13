@@ -19,9 +19,10 @@ guess a clip real or fake, **3** the compression machine, **4** the nepstem-fabr
 ## Quick start (local development)
 
 The whole runtime is one **Next.js 16** app in `web/`. It needs **no GPU and no
-models** — it serves pre-generated audio plus one tiny stats API.
-
-Prerequisites: **Node 22**, **Python 3.12**, and **ffmpeg/ffprobe with libmp3lame**.
+models** — it serves pre-generated audio plus one tiny stats API. For development
+without Docker, install [Node.js 22](https://nodejs.org/en/download),
+[Python 3.12](https://www.python.org/downloads/), and
+[FFmpeg/ffprobe](https://ffmpeg.org/download.html) with libmp3lame support.
 
 ```bash
 make dev
@@ -46,13 +47,44 @@ make check
 Runs the frontend lint, the production build, and the sample-pack verifier. See
 [tools/README.md](tools/README.md) for the individual commands.
 
-## Docker
+## Run with Docker (recommended)
+
+If an IT or hosting team will run the demo, ask them to **deploy this application
+as a Linux Docker container** (or as the included Docker Compose service). The
+runtime is CPU-only, listens on port `3000`, needs no model server or GPU, and
+stores its anonymous statistics in `/app/data`. Put the service behind the
+organisation's usual HTTPS reverse proxy when it is exposed beyond a trusted
+local network.
+
+### Prerequisites
+
+- [Git](https://git-scm.com/downloads) to clone the repository.
+- [Docker Desktop](https://docs.docker.com/desktop/) on macOS or Windows, or
+  [Docker Engine](https://docs.docker.com/engine/install/) on a Linux host.
+- [Docker Compose v2](https://docs.docker.com/compose/install/) (included with
+  Docker Desktop; install the Compose plugin with Docker Engine).
+- `make`, [Python 3.12](https://www.python.org/downloads/), and
+  [FFmpeg/ffprobe](https://ffmpeg.org/download.html) with libmp3lame support for
+  the one-time generation of the synthetic demo audio before the image is built.
+
+Node.js is **not** required on the host for this route: the Docker image builds
+and contains the Node.js application. Once an image has been built, a deployment
+host only needs a compatible container runtime, port `3000`, and (when statistics
+must survive restarts) a persistent volume mounted at `/app/data`.
+
+### Start the demo
 
 ```bash
+git clone https://github.com/jmqcooper/deepfake-detective-demo.git
+cd deepfake-detective-demo
 make docker
 ```
 
-Ensures a sample pack exists (the build context is `web/`, so it must already
+Open <http://localhost:3000>. Check the deployment with `docker compose ps` and
+view logs with `docker compose logs -f web`. Stop it with `docker compose down`;
+the named statistics volume is retained.
+
+`make docker` ensures a sample pack exists (the build context is `web/`, so it must already
 contain one), then runs `docker compose up -d --build`. SQLite persists to a
 mounted volume. For a stateless host set `STATS_DRIVER=memory`;
 stats then degrade to "no data yet" and never crash the kiosk.
