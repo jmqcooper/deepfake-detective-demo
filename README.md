@@ -1,43 +1,28 @@
 # De Deepfake Detective Academie
 
-An interactive, museum-ready web demo that teaches an 8-year-old — and a general
-audience — how speech AI works and how deepfake voices get caught. Built for the
-**INDEEP** project (UvA), intended for NEMO and similar venues. Dutch-first, with
-an English toggle. Runs on a laptop, tablet or phone.
+A Dutch-first, English-enabled museum demo that teaches children and general
+audiences how speech recognition and deepfake detection differ. Visitors move
+through six short stations: sound-to-text, real-or-fake listening, compression,
+sentence building, local voice cloning, and a practical safety quiz.
 
-Two AI personas carry the story, and the distinction between them *is* the lesson:
-**Miko** (a soft amber circle) is the speech recogniser — eager, writes down every
-word, believes all of them. **Agent Echo** (a hard teal shield) is the detective —
-suspicious, reads spectrograms, catches the fakes. The punchline, landed through
-play in Station 4: Miko transcribes a deepfake perfectly and never notices it is
-fake. Recognising speech and detecting forgery are different jobs; you need both.
+The demo takes about 12 minutes and runs on a laptop, tablet, or phone. During a
+visit, microphone audio, model inference, and statistics are handled purely
+locally on the host machine.
 
-The six stations take about 12 minutes: **1** how sound becomes text, **2** Echt
-of Nep?, **3** what channels and compression remove, **4** make a sentence,
-**5** clone your own voice, **6** a practical safety quiz and the diploma.
+## Local development
 
-## Quick start (local development)
-
-The interface is one **Next.js 16** app in `web/`. Stations 1 to 4 and 6 use the
-prepared pack. Station 5 connects to a private model service on the MacBook.
-For development
-without Docker, install [Node.js 22](https://nodejs.org/en/download),
+Install [Node.js 22](https://nodejs.org/en/download),
 [Python 3.12](https://www.python.org/downloads/), and
-[FFmpeg/ffprobe](https://ffmpeg.org/download.html) with libmp3lame support.
+[FFmpeg](https://ffmpeg.org/download.html), then run:
 
 ```bash
 make dev
 ```
 
-On a fresh clone this installs dependencies, generates the local development
-fixture (`web/public/samples/` is generated and gitignored, so without a pack
-the app only shows a friendly "run the sample pipeline" screen), and starts the
-dev server at <http://localhost:3000>.
-
-> The fixture is **tones and silence**, not real speech — enough to boot and develop
-> the whole app, but not exhibit- or research-quality audio. See
-> [tools/README.md](tools/README.md) for the real-media pipeline and the individual
-> commands `make dev` runs.
+This installs dependencies, creates a synthetic development audio pack, and
+starts the Next.js app at <http://localhost:3000>. The fixture contains tones and
+silence; exhibition-quality media is generated separately. See
+[tools/README.md](tools/README.md) for the media pipeline.
 
 ## Checks
 
@@ -45,36 +30,12 @@ dev server at <http://localhost:3000>.
 make check
 ```
 
-Provisions the locked Python environment, enforces Node 22/native SQLite parity, runs unit
-tests, lint, typecheck and the production build, then decodes and validates the complete
-sample pack. See
-[tools/README.md](tools/README.md) for the individual commands.
+This verifies the runtime and script syntax, runs the Python and web tests, lint,
+typecheck, production build, sample-pack validation, and API end-to-end tests.
 
-## Run with Docker (recommended)
+## Docker
 
-If an IT or hosting team will run the demo, ask them to **deploy this application
-as a Linux Docker container** (or as the included Docker Compose service). The
-web container listens on port `3000` and stores anonymous statistics in
-`/app/data`. Run the cloning service natively on the MacBook so PyTorch can use
-Apple MPS. Put the web service behind the
-organisation's usual HTTPS reverse proxy when it is exposed beyond a trusted
-local network.
-
-### Prerequisites
-
-- [Git](https://git-scm.com/downloads) to clone the repository.
-- [Docker Desktop](https://docs.docker.com/desktop/) on macOS or Windows, or
-  [Docker Engine](https://docs.docker.com/engine/install/) on a Linux host.
-- [Docker Compose v2](https://docs.docker.com/compose/install/) (included with
-  Docker Desktop; install the Compose plugin with Docker Engine).
-
-Node.js is **not** required on the host for this route: the Docker image builds
-and contains the Node.js application and generates a synthetic demo audio pack
-when no exhibition pack is present. Python, FFmpeg, and `make` are also contained
-in or unnecessary for the Docker build. The host only needs Docker, port `3000`,
-and (when statistics must survive restarts) a persistent volume at `/app/data`.
-
-### Start the demo
+With Docker and Docker Compose installed:
 
 ```bash
 git clone https://github.com/jmqcooper/deepfake-detective-demo.git
@@ -82,100 +43,44 @@ cd deepfake-detective-demo
 docker compose up -d --build
 ```
 
-Open <http://localhost:3000>. Check the deployment with `docker compose ps` and
-view logs with `docker compose logs -f web`. Stop it with `docker compose down`;
-the named statistics volume is retained.
+Open <http://localhost:3000>. The container includes a synthetic audio fixture
+when no exhibition pack is present and persists statistics in a named volume.
+Use `docker compose logs -f web` for logs and `docker compose down` to stop it.
 
-On a fresh clone, the image build creates a small synthetic audio fixture so the
-complete teaching flow works immediately. If `web/public/samples/manifest.json`
-already exists, that exhibition pack is included instead. The root build context
-is allow-listed, so local model caches, virtualenvs and databases never reach
-Docker. SQLite
-persists to a named volume and the container exposes a `/api/health` health
-check. For ephemeral counters set `STATS_DRIVER=memory`; to disable reporting
-entirely set `STATS_DRIVER=none`, which reports degraded health without stopping
-the teaching flow.
+Live voice cloning runs as a separate local service so Apple Silicon can use MPS;
+setup is documented in [docs/LOCAL_VOICE_CLONING.md](docs/LOCAL_VOICE_CLONING.md).
 
-## Research-media regeneration (optional)
+## Project layout
 
-The samples above are a synthetic fixture. Exhibition- and research-quality media —
-real Common Voice speech, separately generated Voxtral TTS fakes, and genuine Voxtral
-ASR transcripts — come from an **offline, provider-neutral pipeline** described by its
-input/output contract and licensing constraints in **[tools/README.md](tools/README.md)**.
-That pipeline is not required to develop or run the app.
-
-## Architecture
-
-```
-web/src/app/           # Next.js pages + API routes (events, stats, health)
-web/src/components/    # DemoShell + kiosk chrome + the six station UIs
-web/src/i18n/          # nl.json / en.json — ALL user-visible copy lives here
-web/src/lib/           # the contracts and the logic: manifest schema, event
-                       # handling, stats, kiosk flow, audio state, i18n rules
-web/tests/             # node --test, no test framework to install
-web/public/samples/    # GENERATED, gitignored — the sample pack + manifest.json
-tools/                 # offline media pipeline (Python)
-SPEC.md                # API, data and manifest contracts — the source of truth
-docker-compose.yml     # deployment
+```text
+web/src/app/           Next.js pages and API routes
+web/src/components/    Kiosk shell and station interfaces
+web/src/i18n/          Dutch and English copy
+web/src/lib/           Shared contracts and tested logic
+web/tests/             Unit and API tests
+tools/                 Offline media pipeline and local model service
+ops/                   Kiosk and maintenance scripts
+SPEC.md                API, data, and manifest contracts
 ```
 
-`web/src/lib/` is React-free on purpose. Anything that has to be *correct* rather
-than merely rendered — whether a guess was right, which clip a session has already
-answered, when the kiosk resets — lives there and is covered by `npm test`. The
-stations stay thin.
-
-## Honesty
-
-The demo is about deception, so it does not practise any. Spectrogram tells are
-presented as clues about the clips in the pack, never as a test that works on the
-next voice message: modern fakes add breath and room noise, and plenty of genuine
-recordings sound spotless. Participants make the Echt of Nep? judgments. Echo
-explains the prepared evidence afterward. In Station 5, Echo makes one real local
-DF Arena model guess on the newly generated clone. The model can be wrong. Every
-transcript is the recogniser's real output, mistakes included.
-
-Which is why the demo ends on a scenario rather than a score: a voice you know asks
-for money, and the answer is to hang up and call back on a number you already have.
-That works even when your ears have been fooled — and after four stations, a visitor
-knows they can be.
-
-## Privacy
-
-Station 5 uses the microphone after the participant taps record. The recording
-stays on the MacBook. A request-scoped temporary WAV is deleted after generation,
-generated audio is returned with `no-store`, and browser object URLs are cleared
-when the station ends. No participant audio goes to an inference provider.
-
-The only stored interaction data is an anonymous per-clip counter plus a session score, so the demo can say "71%
-of visitors were fooled by this one". Session IDs are random, in-memory, and never
-correlated across visits; a reset forgets the id on the server as well as in the
-browser. Event retention defaults to 90 days and can be changed with
-`STATS_RETENTION_DAYS`.
-
-The rate limiter respects this too: it is keyed on the anonymous session id the
-request already carries, never on a client address — hashed or otherwise. No IP is
-read, logged or stored anywhere in the app.
+`web/public/samples/` is generated and gitignored. The research-media pipeline
+is optional for development and described in [tools/README.md](tools/README.md).
 
 ## Licensing
 
-- **Code:** Apache-2.0 — see [LICENSE](LICENSE).
-- **Real speech:** Common Voice (CC0) for the current v2 case packs; Multilingual
-  LibriSpeech (Dutch), CC BY 4.0 (attribution required), for the fallback inputs.
-- **Deepfake speech:** generated by `mistralai/Voxtral-4B-TTS-2603`, whose weights are
-  **CC BY-NC 4.0 (non-commercial)** — the one component that is not fully open. Commercial
-  use requires removing, replacing, or separately licensing it; verify the licence covers
-  your intended use before publishing. Do not describe the whole sample pack as permissively
-  licensed.
-- **ASR transcripts:** `mistralai/Voxtral-Mini-4B-Realtime-2602`, Apache-2.0.
-- **Live voice cloning:** Chatterbox Multilingual V3, MIT. It runs locally on the MacBook.
-- **Live clone detector:** DF Arena 500M, custom non-commercial model licence. It runs locally on the MacBook.
+- Code: Apache-2.0; see [LICENSE](LICENSE).
+- Real speech: Common Voice (CC0), with Multilingual LibriSpeech (CC BY 4.0)
+  available as a fallback source.
+- Generated Voxtral TTS media: CC BY-NC 4.0.
+- Voxtral ASR transcripts: Apache-2.0.
+- Chatterbox Multilingual V3 voice cloning: MIT.
+- DF Arena 500M clone detection: custom non-commercial licence.
 
-See [NOTICE](NOTICE) for the full attribution notice.
+See [NOTICE](NOTICE) for complete attribution and licence details.
 
-## More
+## Documentation
 
-- [CONTRIBUTING.md](CONTRIBUTING.md) — first-contribution loop and where changes belong.
-- [tools/README.md](tools/README.md) — the offline media pipeline.
-- [SPEC.md](SPEC.md) — API, data and manifest contracts.
-- [NOTICE](NOTICE) — attribution and licensing notice.
-- [Museum operations](docs/MUSEUM_OPERATIONS.md) — opening checks, kiosk recovery, backups, retention and reset.
+- [CONTRIBUTING.md](CONTRIBUTING.md) — contribution workflow and required checks.
+- [SPEC.md](SPEC.md) — application and media contracts.
+- [tools/README.md](tools/README.md) — sample generation and validation.
+- [Museum operations](docs/MUSEUM_OPERATIONS.md) — kiosk setup, recovery, and maintenance.

@@ -1,5 +1,5 @@
 # Shortcuts for the tested local setup. See README.md.
-.PHONY: install samples dev test check check-runtime release-check docker docker-check
+.PHONY: install samples dev test check check-runtime check-scripts release-check docker docker-check
 
 SAMPLES := web/public/samples/manifest.json
 PYTHON ?= python3.12
@@ -10,6 +10,9 @@ VENV_DEPS := .venv/.deps
 # it, so make regenerates the fixture; an untouched tree stays fast.
 STAMP := web/public/samples/.dev-fixture
 SAMPLE_SOURCES := tools/make_synthetic_dutch_fixture.py tools/prepare_samples.py
+PYTHON_SOURCES := $(shell git ls-files ':(glob)tools/**/*.py')
+SHELL_SOURCES := $(shell git ls-files ':(glob)tools/**/*.sh' ':(glob)ops/**/*.sh')
+NODE_SOURCES := $(shell git ls-files ':(glob)tools/**/*.mjs' ':(glob)ops/**/*.mjs')
 
 install: web/node_modules $(VENV_DEPS)
 
@@ -46,6 +49,11 @@ dev: web/node_modules samples
 check-runtime: web/node_modules
 	node tools/check_runtime.mjs
 
+check-scripts: $(VENV_PYTHON)
+	PYTHONPYCACHEPREFIX=tools/.cache/pycache $(VENV_PYTHON) -m py_compile $(PYTHON_SOURCES)
+	@for script in $(SHELL_SOURCES); do bash -n "$$script"; done
+	@for script in $(NODE_SOURCES); do node --check "$$script"; done
+
 test: web/node_modules $(VENV_DEPS)
 	$(VENV_PYTHON) -m unittest discover -s tools/tests -v
 	cd web && npm test
@@ -53,7 +61,7 @@ test: web/node_modules $(VENV_DEPS)
 release-check: $(VENV_DEPS) samples
 	$(VENV_PYTHON) tools/prepare_samples.py --out web/public/samples --verify-only
 
-check: install samples check-runtime
+check: install samples check-runtime check-scripts
 	$(VENV_PYTHON) -m unittest discover -s tools/tests -v
 	cd web && npm run check
 	$(VENV_PYTHON) tools/prepare_samples.py --out web/public/samples --verify-only
