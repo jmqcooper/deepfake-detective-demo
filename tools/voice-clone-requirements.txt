@@ -1,0 +1,9 @@
+# Native macOS service. Run outside Docker so PyTorch can use Apple MPS.
+# Perth still imports pkg_resources, which setuptools 81+ removed.
+setuptools==80.9.0
+chatterbox-tts==0.1.7
+fastapi==0.116.1
+uvicorn==0.35.0
+python-multipart==0.0.20
+soundfile==0.13.1
+transformers==5.2.0

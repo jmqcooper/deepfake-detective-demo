@@ -2,7 +2,7 @@
 
 Interactive museum demo (NEMO et al.) teaching audio-deepfake literacy to ages 8+.
 Two AI personas: **Miko** (ASR, gullible listener) and **Agent Echo** (detective, spots fakes).
-Five stations, 10–15 minutes, Dutch-first with English toggle.
+Six stations, 10–15 minutes, Dutch-first with English toggle.
 
 ## Deployment targets
 
@@ -12,8 +12,9 @@ Both run the *same* Next.js app; only the stats store differs.
 - **Version B (personal Next.js site):** same app, `STATS_DRIVER=memory` or a hosted libSQL URL.
   If no DB is reachable the app still runs fully — stats degrade to "no data yet", never a crash.
 
-Stations 2–5 are **pure static assets + one tiny API**. No GPU is needed at runtime.
-All deepfake audio is **pre-generated offline** (see `tools/`).
+Stations 1 to 4 and 6 use static assets. Station 5 records ten seconds and calls
+a local Chatterbox Multilingual V3 service on the MacBook. The service also runs
+DF Arena 500M for Echo's independent guess. Participant audio stays on the machine.
 
 ## Repository layout
 
@@ -170,8 +171,9 @@ another origin and the health check can map a path to a file on disk.
 
 ## HTTP API
 
-All endpoints are anonymous. **No audio, no microphone data, no personal data is ever stored** —
-only the aggregate counters below. That keeps the demo outside ethics-committee scope.
+All endpoints are anonymous. The live route handles microphone audio in memory
+and one request-scoped temporary file. It never stores participant audio. The
+events API stores only the aggregate counters below.
 
 **The server is authoritative.** The client sends what the visitor *did*; it never
 sends what that means. There is no `correct` field and no client-supplied `score`:
@@ -194,7 +196,7 @@ in-process and expires within one window.
 ```jsonc
 // request — one of:
 { "sessionId": "uuid-v4, minted in memory, dropped on reset",
-  "station": 2,                          // 1..5
+  "station": 2,                          // 1..6
   "lang": "nl",                          // "nl" | "en"
   "type": "guess", "clipId": "case-03", "guess": "fake" }
 
@@ -202,7 +204,7 @@ in-process and expires within one window.
   "type": "station_enter" }              // also: station_complete | station_skip
                                          //       session_complete | session_reset
 
-{ "sessionId": "…", "station": 5, "lang": "nl",
+{ "sessionId": "…", "station": 6, "lang": "nl",
   "type": "final_scenario", "choice": "callback" }  // send | reply | callback | unsure
 ```
 
@@ -237,7 +239,7 @@ Still available for direct links and tooling; Station 2 no longer needs it.
 ```
 
 ### `GET /api/stats/summary`
-Drives Station 5's closing screen.
+Drives Station 6's closing screen.
 
 ```jsonc
 { "sessionsToday": 214, "avgScore": 3.1,
@@ -326,12 +328,12 @@ same keys and the same `{placeholders}` (enforced by `tests/i18n.test.ts`).
 - A **sound check** precedes station 1: one real clip from the pack, played on an
   explicit tap (never autoplay), one "can you hear it?", and troubleshooting plus a
   way past for anyone who cannot. Every station after it is audio.
-- 90 s idle → attract-mode screen; 45 s idle on Station 5 → full reset to Station 1.
+- 90 s idle → attract-mode screen; 45 s idle on Station 6 → full reset to Station 1.
   Both live in `web/src/lib/kiosk-flow.ts`, which is the only place transitions happen.
 - Every station has a skip (`→`) affordance so an abandoned session never blocks the
   next visitor. Skips are reported as `station_skip`, so an exhibit where 40% of
   visitors skip Station 3 is a finding rather than a gap.
-- Progress rail of 5 segments, always visible, with a spoken equivalent.
+- Progress rail of 6 segments, always visible, with a spoken equivalent.
 - The demo ends on a **scenario**, not a score: a voice you know asks for money, and
   the correct action is to hang up and call back on a number you already have. It is
   the only part that transfers outside the room, so it is the last thing a visitor
@@ -345,9 +347,10 @@ The demo is about deception, so it must not practise any:
    clips*, never as a test that works on the next voice message. Modern fakes add
    breath and room noise; plenty of genuine recordings sound spotless. Copy that
    states a clue as a certainty fails `tests/i18n.test.ts`.
-2. **Echo is theatre, and says so.** Agent Echo knows which clips are fake because
-   the pack ships with prepared labels — nothing on the screen analyses audio. Both
-   Station 2 and Station 4 disclose this in the visitor's own language.
+2. **Echo guesses once.** Participants judge the prepared Echt of Nep? clips.
+   Echo explains their known evidence afterward. On the participant's live clone,
+   DF Arena 500M sees only the generated audio and makes Echo's genuine guess.
+   Reliability comes from agreement across three local variants.
 3. **Nothing is invented.** Transcripts are the ASR's real output, mistakes
    included; Station 1's "loudest moment" is measured from the decoded audio in the
    browser; Station 3's verdict is read off the pack's own transcripts. If a future

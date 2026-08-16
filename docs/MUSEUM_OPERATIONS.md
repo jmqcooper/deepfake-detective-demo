@@ -1,14 +1,18 @@
 # Museum operations runbook
 
-This installation is offline-first: it never records a visitor's voice, and the only stored data is anonymous interaction telemetry. Run the kiosk on a wired network and keep the sample pack and statistics volume on the machine.
+This installation is offline-first. Station 5 records a visitor for ten seconds,
+processes the audio on the MacBook, then deletes it. The only stored data is
+anonymous interaction telemetry. Keep the sample pack, model cache and statistics
+volume on the machine.
 
 ## Before opening
 
-1. Start the app with `docker compose up -d --build`.
-2. Wait for `docker compose ps` to report the web service as healthy, then check `curl --fail http://127.0.0.1:3000/api/health`.
-3. Open the sound check in the kiosk, play its reference clip, and confirm that both speakers are audible at a comfortable level. Confirm there is no microphone attached or enabled.
-4. Walk all five stations in Dutch and English at the installed screen size. Verify touch input, the skip control, audio replay, the final safety scenario, and the idle reset.
-5. Back up statistics using the Docker commands below, and copy the resulting
+1. Start the native voice service with `./.venv-voice/bin/python tools/voice_clone_service.py` and wait for `curl --fail http://127.0.0.1:8765/health` to report `"ready":true`.
+2. Start the app with `docker compose up -d --build`.
+3. Wait for `docker compose ps` to report the web service as healthy, then check `curl --fail http://127.0.0.1:3000/api/health`.
+4. Open the sound check and confirm both speakers are audible. Record and clone one test voice. Confirm microphone permission, playback and Echo's guess.
+5. Walk all six stations in Dutch and English. Verify touch input, the skip control, audio replay, the final safety scenario, and the idle reset.
+6. Back up statistics using the Docker commands below, and copy the resulting
    snapshot to encrypted museum storage.
 
 Do not open the exhibition if health reports `media.status: "failed"`, the sound
@@ -44,6 +48,7 @@ For a non-Docker development database, use either
 same command ending in `prune`.
 
 Reset always creates a timestamped backup first. Store backups on encrypted museum storage, restrict operator access, and delete them under the same retention policy. The app must not log IP addresses, user agents, free text, audio, or stable visitor identifiers.
+The cloning service accepts fixed exhibit sentences only and deletes its temporary WAV after each request.
 
 ## Release checklist
 

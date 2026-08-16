@@ -70,7 +70,7 @@ test("the summary averages one completion per session", () => {
   const driver = createMemoryDriver();
   driver.recordEvent({
     sessionId: "a",
-    station: 5,
+    station: 6,
     lang: "nl",
     type: "session_complete",
     score: 4,
@@ -78,14 +78,14 @@ test("the summary averages one completion per session", () => {
   // A double-submitted completion must not drag the average.
   driver.recordEvent({
     sessionId: "a",
-    station: 5,
+    station: 6,
     lang: "nl",
     type: "session_complete",
     score: 0,
   });
   driver.recordEvent({
     sessionId: "b",
-    station: 5,
+    station: 6,
     lang: "en",
     type: "session_complete",
     score: 2,
@@ -112,7 +112,7 @@ test("the final-scenario share is reported once there is a crowd", () => {
   for (let i = 0; i < 4; i += 1) {
     driver.recordEvent({
       sessionId: `s${i}`,
-      station: 5,
+      station: 6,
       lang: "nl",
       type: "final_scenario",
       choice: "callback",
@@ -124,7 +124,7 @@ test("the final-scenario share is reported once there is a crowd", () => {
   for (let i = 4; i < 10; i += 1) {
     driver.recordEvent({
       sessionId: `s${i}`,
-      station: 5,
+      station: 6,
       lang: "nl",
       type: "final_scenario",
       choice: "reply",

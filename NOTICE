@@ -26,3 +26,9 @@ The bundled Bricolage Grotesque, Nunito, and JetBrains Mono font files come
 from the Google Fonts repository and are licensed under the SIL Open Font
 License, Version 1.1. The corresponding licence texts are included alongside
 the font files in web/src/app/fonts/.
+
+Live voice cloning uses Chatterbox Multilingual V3 from Resemble AI, distributed
+under the MIT License. The local clone detector uses Speech Arena's DF Arena 500M
+model at revision 8258fa8e74ff9b8ad20d4c939c1a7f694a6e4080. Its published model
+licence restricts use to non-commercial purposes. Both models run on the kiosk
+MacBook. Participant audio is not sent to either model provider.

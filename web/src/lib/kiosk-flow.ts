@@ -1,9 +1,9 @@
 /**
  * Every transition the kiosk can make, in one place.
  *
- * This used to be spread across DemoShell and five stations, each with its own
+ * This used to be spread across DemoShell and the stations, each with its own
  * idea of what "done" meant: Station 2 fired `station_complete`, the other four
- * fired nothing, skipping fired nothing at all, and the 45-second Station 5
+ * fired nothing, skipping fired nothing at all, and the 45-second final-station
  * reset in SPEC.md was never implemented — every screen used the same 90 s.
  * So the numbers a curator would read off the demo were quietly wrong.
  *
@@ -12,13 +12,13 @@
  * table rather than of five separate components remembering to call `track`.
  */
 
-export const STATION_COUNT = 5;
+export const STATION_COUNT = 6;
 
 /** SPEC.md § Kiosk behaviour. */
 export const IDLE_MS = 90_000;
 export const IDLE_MS_STATION_5 = 45_000;
 
-export type StationIndex = 0 | 1 | 2 | 3 | 4;
+export type StationIndex = 0 | 1 | 2 | 3 | 4 | 5;
 
 export type Phase = "attract" | "soundCheck" | "briefing" | "station";
 
@@ -35,8 +35,8 @@ export type FlowAction =
   | { type: "skip" }
   | { type: "restart" };
 
-/** Stations that open with a mission briefing. Station 5 IS the outro. */
-const BRIEFED: ReadonlySet<StationIndex> = new Set<StationIndex>([0, 1, 2, 3]);
+/** Stations that open with a mission briefing. Station 6 is the outro. */
+const BRIEFED: ReadonlySet<StationIndex> = new Set<StationIndex>([0, 1, 2, 3, 4]);
 
 export function initialFlow(): FlowState {
   return { phase: "attract", station: 0 };
@@ -80,7 +80,7 @@ export function flowReducer(state: FlowState, action: FlowAction): FlowState {
 }
 
 /**
- * The idle timer. Station 5 is the diploma — a finished visitor stands there
+ * The idle timer. Station 6 is the diploma. A finished visitor stands there
  * reading it, so it resets sooner to free the kiosk for the next one. The
  * attract screen is already the reset state and must not loop a timer.
  */
@@ -92,7 +92,7 @@ export function idleTimeoutMs(state: FlowState): number {
   return IDLE_MS;
 }
 
-/** Human-readable station number (1..5) for telemetry and copy. */
+/** Human-readable station number (1..6) for telemetry and copy. */
 export function stationNumber(station: StationIndex): number {
   return station + 1;
 }

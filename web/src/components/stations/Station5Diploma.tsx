@@ -18,7 +18,7 @@ import type { SummaryStats } from "@/lib/stats";
 import type { FinalScenarioChoice } from "@/lib/final-scenario";
 
 /**
- * Station 5 — the last test, then the diploma.
+ * Station 6: the last test, then the diploma.
  *
  * The most important element on this screen is not the score, it's the crowd
  * stat: "62% of visitors fell for that one too". For a general audience the
@@ -30,7 +30,7 @@ import type { FinalScenarioChoice } from "@/lib/final-scenario";
  * spectrogram, which is a museum skill. This teaches what to do when a voice
  * they love asks them for money, which is the one that matters at home.
  */
-export function Station5Diploma({
+export function Station6Diploma({
   score,
   total,
   lang,
@@ -65,7 +65,7 @@ export function Station5Diploma({
     completionSent.current = true;
     let cancelled = false;
     void (async () => {
-      const response = await track({ station: 5, type: "session_complete" });
+      const response = await track({ station: 6, type: "session_complete" });
       if (cancelled || !response) return;
       onScoreChange(response.session.correct);
     })();
@@ -92,7 +92,7 @@ export function Station5Diploma({
 
   const onScenarioAnswer = useCallback(
     async (choice: FinalScenarioChoice) => {
-      const response = await track({ station: 5, type: "final_scenario", choice });
+      const response = await track({ station: 6, type: "final_scenario", choice });
       return response?.scenario?.correct ?? choice === "callback";
     },
     [track],
@@ -107,7 +107,7 @@ export function Station5Diploma({
         onDone={(wasRight) => {
           setVerifiedFirst(wasRight);
           setScenarioDone(true);
-          announce(t("station5.title"));
+          announce(t("station6.title"));
         }}
       />
     );
@@ -121,30 +121,30 @@ export function Station5Diploma({
     <StationCard>
       <div className="flex flex-col items-center gap-3 text-center">
         <p className="rise font-mono text-xs tracking-[0.22em] text-ink-400 uppercase">
-          {t("station5.title")}
+          {t("station6.title")}
         </p>
         <h2
           className="rise text-3xl font-black text-white sm:text-5xl md:text-6xl"
           style={{ animationDelay: "80ms" }}
         >
-          {t(`station5.rank.${rank}`)}
+          {t(`station6.rank.${rank}`)}
         </h2>
         <p
           className="rise text-lg font-bold text-ink-400 tnum sm:text-xl"
           style={{ animationDelay: "160ms" }}
         >
-          {t("station5.score", { score, total })}
+          {t("station6.score", { score, total })}
         </p>
       </div>
 
       <div className="flex flex-wrap justify-center gap-4 py-2 sm:gap-5">
-        <Badge icon={<IconBrain />} label={t("station5.badge1")} delayMs={240} />
-        <Badge icon={<IconMagnifier />} label={t("station5.badge2")} delayMs={320} />
-        <Badge icon={<IconSlider />} label={t("station5.badge3")} delayMs={400} />
-        <Badge icon={<IconFactory />} label={t("station5.badge4")} delayMs={480} />
+        <Badge icon={<IconBrain />} label={t("station6.badge1")} delayMs={240} />
+        <Badge icon={<IconMagnifier />} label={t("station6.badge2")} delayMs={320} />
+        <Badge icon={<IconSlider />} label={t("station6.badge3")} delayMs={400} />
+        <Badge icon={<IconFactory />} label={t("station6.badge4")} delayMs={480} />
         {/* Earned by choosing to verify, not by hearing anything. */}
         {verifiedFirst && (
-          <Badge icon={<IconPhone />} label={t("station5.badge5")} delayMs={560} />
+          <Badge icon={<IconPhone />} label={t("station6.badge5")} delayMs={560} />
         )}
       </div>
 
@@ -153,19 +153,19 @@ export function Station5Diploma({
           className="rise text-center text-sm font-semibold text-ink-400 tnum sm:text-base"
           style={{ animationDelay: "540ms" }}
         >
-          {t("station5.crowd", {
+          {t("station6.crowd", {
             n: summary.sessionsToday,
             avg: summary.avgScore?.toFixed(1) ?? "–",
           })}
           {summary.hardestClip &&
-            " " + t("station5.hardest", { pct: summary.hardestClip.fooledPct })}
+            " " + t("station6.hardest", { pct: summary.hardestClip.fooledPct })}
           {summary.verifyFirstPct !== null &&
-            " " + t("station5.verifyCrowd", { pct: summary.verifyFirstPct })}
+            " " + t("station6.verifyCrowd", { pct: summary.verifyFirstPct })}
         </p>
       )}
 
       <PersonaBubble who="echo" delayMs={600}>
-        {t("station5.echoOutro")}
+        {t("station6.echoOutro")}
       </PersonaBubble>
 
       <div className="grid gap-3 md:grid-cols-3">
@@ -181,7 +181,7 @@ export function Station5Diploma({
                 <Icon />
               </span>
               <p className="text-sm leading-snug font-bold text-white/85 sm:text-base">
-                {t(`station5.tip${i}`)}
+                {t(`station6.tip${i}`)}
               </p>
             </div>
           );
@@ -190,7 +190,7 @@ export function Station5Diploma({
 
       <div className="flex justify-center pt-1">
         <BigButton onClick={onRestart} tone="miko">
-          {t("station5.restart")}
+          {t("station6.restart")}
         </BigButton>
       </div>
     </StationCard>

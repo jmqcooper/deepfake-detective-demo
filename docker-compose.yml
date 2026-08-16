@@ -13,6 +13,9 @@ services:
       TZ: ${TZ:-Europe/Amsterdam}
       REPORT_TIMEZONE: ${REPORT_TIMEZONE:-Europe/Amsterdam}
       STATS_RETENTION_DAYS: ${STATS_RETENTION_DAYS:-90}
+      VOICE_CLONE_URL: ${VOICE_CLONE_URL:-http://host.docker.internal:8765}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - stats-data:/app/data
       - stats-backups:/app/backups

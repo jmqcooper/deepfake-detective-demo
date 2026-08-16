@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "De Deepfake Detective Academie",
-    "hook": "Sommige stemmen die je hier hoort, bestaan niet echt.",
+    "hook": "AI kan steeds meer. Ook praten met een stem die jij vertrouwt.",
     "start": "Start de training"
   },
   "common": {
@@ -30,7 +30,7 @@
   "soundcheck": {
     "intro": "Eerst even dit: hoor je mij eigenlijk wel? Alles hierna is geluid.",
     "title": "Geluidscheck",
-    "body": "Druk op de knop. Je hoort een kort zinnetje. Hoor je niets? Dan helpen we je even — zonder geluid werkt deze demo niet.",
+    "body": "Druk op de knop. Je hoort een kort zinnetje. Stil? Check dan eerst je geluid.",
     "play": "Speel het testgeluid",
     "playAgain": "Speel het nog eens",
     "heard": "Ik hoor het!",
@@ -38,22 +38,22 @@
     "start": "Start de training",
     "confirmed": "Geluid werkt. We beginnen met missie 1.",
     "tipsTitle": "Geen geluid? Probeer dit, in deze volgorde",
-    "tip1": "Zet het volume hoger — op het apparaat én in de browser.",
+    "tip1": "Zet het volume hoger op het apparaat en in de browser.",
     "tip2": "Check het stille-standknopje of Niet storen; op een tablet zet dat alles uit.",
     "tip3": "Heb je een koptelefoon op? Kijk of de stekker er goed in zit.",
-    "tip4": "Druk daarna nog één keer op het testgeluid — sommige browsers laten geluid pas toe ná een tik.",
+    "tip4": "Druk daarna nog één keer. Sommige browsers starten geluid pas na een tik.",
     "continueAnyway": "Verder zonder geluid"
   },
   "setup": {
     "title": "Nog geen geluidsfragmenten",
     "body": "De demo heeft eerst een set audiofragmenten nodig. Draai deze commando's in de map van het project:",
     "brokenTitle": "Het samplepakket is niet te lezen",
-    "brokenBody": "Er is wel een manifest.json, maar die past niet bij het formaat dat de app verwacht. Maak het pakket opnieuw aan:"
+    "brokenBody": "De manifest.json heeft een onverwacht formaat. Maak het pakket opnieuw aan:"
   },
   "persona": {
     "miko": {
       "name": "Miko de minion",
-      "description": "Miko hoort woorden goed, maar trapt soms in een nepstem."
+      "description": "Miko hoort woorden goed. Een nepstem kan hem toch foppen."
     },
     "echo": {
       "name": "Agent Echo de detective",
@@ -65,19 +65,28 @@
     "start": "Start de missie",
     "b1": {
       "title": "In het brein van de spraak-AI",
-      "text": "Hoi! Ik ben Miko. Ik schrijf op wat ik hoor. Kom kijken hoe dat werkt in mijn hoofd!"
+      "text": "Hoi, ik ben Miko. Ik zet geluid om in woorden. Kijk mee hoe dat werkt."
     },
     "b2": {
       "title": "Echt of Nep?",
-      "text": "Ik ben Agent Echo, deepfake-detective. Miko gelooft alles — ik niet. Vijf stemmen wachten op jouw oordeel: echt of nep?"
+      "text": "Vijf stemmen. Welke zijn echt en welke komen uit een computer? Kijk én luister goed.",
+      "hintTitle": "Zo pak je het aan",
+      "hintSpecTitle": "Kijk naar het spectrogram",
+      "hintSpec": "Lees van links naar rechts. Zoek naar strakke strepen, kale stiltes en een plotseling lege bovenkant.",
+      "hintAudioTitle": "Luister naar de stem",
+      "hintAudio": "Let op adem, kleine foutjes, rare pauzes en een stem die opvallend glad klinkt."
     },
     "b3": {
       "title": "De compressie-machine",
-      "text": "Goed gedaan! Maar buiten drukken telefoons stemmen plat. Kijk wat er dan met mijn bewijs gebeurt."
+      "text": "Telefoons en apps drukken audio samen. Kijk wat er met de details gebeurt."
     },
     "b4": {
       "title": "De nepstem-fabriek",
-      "text": "Laatste missie. Een stem die je kent geloof je snel — daar maken boeven misbruik van. Maak nu zelf een nepstem en probeer Miko te foppen."
+      "text": "AI kan een bekende stem kopiëren. Maak een nepbericht en kijk wie erin trapt."
+    },
+    "b5": {
+      "title": "Kloon je eigen stem",
+      "text": "Lees tien seconden voor. De MacBook maakt lokaal een nieuwe zin met jouw stem. Agent Echo hoort alleen het resultaat en raadt zelf."
     }
   },
   "station1": {
@@ -86,10 +95,10 @@
       "miko": "Geluid is trillende lucht! Zo voelt een zin in mijn oren. Druk op Luister."
     },
     "stage1": {
-      "miko": "Ik maak van het geluid een plaatje. Laag onderaan, hoog bovenaan. Fel betekent hard — kun jij het hardste moment vinden?"
+      "miko": "Ik maak van geluid een plaatje. Lage tonen staan onderaan, hoge bovenaan. Fel betekent hard. Vind jij het hardste moment?"
     },
     "stage2": {
-      "miko": "Nu zoek ik stukjes klank in het plaatje. Ik weet het nooit zeker — kijk maar hoe ik gok!"
+      "miko": "Nu zoek ik stukjes klank. Per stukje maak ik een gok."
     },
     "stage3": {
       "miko": "En dan plak ik de stukjes aan elkaar tot woorden. Kijk, ik schrijf mee!"
@@ -103,13 +112,13 @@
     "scrubHint": "Tik op het plaatje, of gebruik de pijltjestoetsen, om naar dat moment te springen. Home en End gaan naar het begin en het eind.",
     "peakPrompt": "Wijs het moment aan dat volgens jou het HARDST is, en bevestig dan.",
     "peakCommit": "Dit is het hardste stukje",
-    "peakClose": "Raak! Het hardste moment zit inderdaad rond {pct}% — je ziet het, en nu hoor je het ook.",
-    "peakFar": "Net niet! Het hardste moment zit rond {pct}%. Kijk maar hoeveel feller het plaatje daar is.",
-    "peakExplain": "Dat is gemeten aan het geluid zelf, hier in je browser — niet geraden door een AI. Fel in het plaatje betekent écht hard.",
+    "peakClose": "Raak! Het hardste moment zit rond {pct}%. Je ziet en hoort het op dezelfde plek.",
+    "peakFar": "Bijna! Het hardste moment zit rond {pct}%. Daar is het plaatje het felst.",
+    "peakExplain": "Je browser heeft dit gemeten in het geluid. Fel in het plaatje betekent hard.",
     "peakLoading": "Het geluid wordt gelezen…",
     "yourGuess": "Waar jij wees",
     "trueLoudest": "Het echte hardste moment",
-    "handoff": "Zo hoor ik dus! Maar of een stem écht is of nep? Dat hoor ik niet. Daar heb je Agent Echo voor…",
+    "handoff": "Zo zet ik geluid om in woorden. Agent Echo gaat nu op zoek naar een nepstem.",
     "noTranscript": "…",
     "toStation2": "Naar Agent Echo"
   },
@@ -117,39 +126,38 @@
     "name": "Echt of Nep?",
     "caseCounter": "Zaak {n} van {total}",
     "replaysLeft": "Nog {n} luisterbeurten",
-    "echoPrompt": "Luister goed. Is dit een écht mens — of een computer?",
-    "prompt1": "Zaak één, een makkie. Luister goed: echt of nep?",
-    "prompt2": "Zaak twee. Let op adem, foutjes en ruis…",
-    "prompt3": "Zaak drie. De nepstemmen worden steeds beter…",
-    "prompt4": "Zaak vier. Hier twijfelen zelfs echte detectives.",
-    "prompt5": "De laatste zaak. Deze had míj bijna gefopt!",
+    "echoPrompt": "Is dit een mens of een computer?",
+    "prompt1": "Zaak één. Echt of nep?",
+    "prompt2": "Zaak twee. Luister naar adem, foutjes en ruis.",
+    "prompt3": "Zaak drie. Kijk ook naar de stiltes.",
+    "prompt4": "Zaak vier. Deze is lastig.",
+    "prompt5": "Laatste zaak. Neem de tijd.",
     "noReplays": "Geen luisterbeurten meer",
     "lookListen": "Het geluids-plaatje",
     "specAlt": "Het geluids-plaatje van deze zaak: de tijd loopt van links naar rechts, lage tonen onderaan, hoge tonen bovenaan.",
     "scoreKicker": "Jouw score",
-    "scoreHigh": "Wauw, jij hebt detective-oren! Maar buiten is mijn werk moeilijker — kijk maar.",
-    "scoreMid": "Goed gedaan! Zelfs echte detectives twijfelen soms. En het wordt nog moeilijker…",
-    "scoreLow": "Lastig hè? Nepstemmen zijn heel goed geworden. Kijk maar waarom…",
+    "scoreHigh": "Scherp geluisterd. Nu testen we wat compressie met de aanwijzingen doet.",
+    "scoreMid": "Goed gedaan. Nepstemmen zijn lastig te herkennen. Nu komt compressie erbij.",
+    "scoreLow": "Dit is lastig. Nepstemmen klinken steeds beter. Nu komt compressie erbij.",
     "toMission3": "Naar missie 3",
     "solved": "Opgelost!",
     "fooled": "Gefopt!",
-    "itWasReal": "Deze stem was ECHT — een gewoon mens.",
-    "itWasFake": "Deze stem was NEP — gemaakt door een computer.",
+    "itWasReal": "Deze stem was ECHT. Je hoorde een mens.",
+    "itWasFake": "Deze stem was NEP. Een computer maakte hem.",
     "fooledStat": "{pct}% van de bezoekers trapte hier ook in!",
-    "evidence": "Het bewijs",
-    "realExplanation": "Een écht mens. Hoor je de adem en de foutjes? Echte mensen zijn zelden netjes — dat is hier een aanwijzing. Geen regel: een computer kan tegenwoordig ook adem toevoegen.",
-    "realExplanationB": "Echt! Hoor je de kamer een beetje galmen? De meeste echte opnames zijn niet helemaal schoon. Pas op: een kraakheldere opname kan ook gewoon echt zijn.",
-    "realExplanationC": "Een écht mens. De stem wiebelt, twijfelt en haalt adem. Veel nepstemmen vergeten dat. De allerbeste niet.",
-    "clueCaveat": "Alles wat ik omcirkel is een aanwijzing over hoe DIT fragment gemaakt is — nooit een bewijs. De nieuwste nepstemmen zetten er expres adem, ruis en galm bij, en heel veel echte opnames klinken juist onwerkelijk schoon. Een aanwijzing wijst een kant op. Beslissen doet hij nooit.",
-    "echoDisclosure": "En ik moet eerlijk zijn: ik luister niet echt. Deze demo is gemaakt mét de antwoorden erbij, want we hebben de nepfragmenten zelf gemaakt en opgeschreven welke dat zijn. Er draait hier geen detector — een echte zou ook twijfelen.",
-    "uncertaintyTitle": "Voorzichtig met je nieuwe superkracht",
-    "uncertainty": "Zeker weten kan niemand op gehoor — jij niet, ik niet, en de onderzoekers die dit bouwen ook niet. Nepstemmen worden elke maand beter, en de aanwijzingen die ik liet zien verdwijnen zodra een bericht wordt platgedrukt. De echte vaardigheid is dus niet beter horen. Het is: weten wat je doet als je het níét zeker weet — en daar gaan we heen.",
+    "evidence": "Aanwijzingen",
+    "realExplanation": "Echt. Je hoort adem en kleine foutjes. AI kan die details inmiddels ook maken.",
+    "realExplanationB": "Echt. Je hoort wat galm van de kamer. Ook een echte opname kan heel schoon klinken.",
+    "realExplanationC": "Echt. De stem wiebelt, twijfelt en haalt adem. Goede nepstemmen doen dat ook.",
+    "clueCaveat": "Dit zijn aanwijzingen in dit fragment. Nieuwe stemmodellen maken ook adem, ruis en galm. Een echt fragment kan juist heel schoon zijn.",
+    "uncertaintyTitle": "Wat je hiervan meeneemt",
+    "uncertainty": "AI-stemmen worden snel beter. Compressie wist veel aanwijzingen. Daarom volgt straks de check die altijd werkt.",
     "nextCase": "Volgende zaak",
     "toScore": "Bekijk je score"
   },
   "station3": {
     "name": "De compressie-machine",
-    "echoIntro": "Luister! De machine speelt dezelfde zin vier keer — elke keer platter. Let op de bovenkant van het plaatje…",
+    "echoIntro": "Dezelfde zin speelt vier keer. Elke versie is sterker samengedrukt. Kijk vooral bovenin het plaatje.",
     "predictTitle": "Eerst een gok",
     "predictBody": "De laatste stand is een heel krakerig spraakbericht. Denk jij dat Miko de zin dan nog steeds kan opschrijven?",
     "predictYes": "Ja, dat lukt hem",
@@ -157,10 +165,10 @@
     "predictRight": "Goed gegokt",
     "predictWrong": "Anders dan je dacht",
     "resultIdentical": "Miko schreef bij de krakerigste stand precies dezelfde zin op als bij studiokwaliteit. De woorden overleefden het platdrukken helemaal.",
-    "resultChanged": "Miko schreef bij de krakerigste stand nog steeds een zin op, maar net niet dezelfde. De woorden overleefden grotendeels; de details niet.",
+    "resultChanged": "Miko schreef bij de krakerigste stand bijna dezelfde zin op. De woorden bleven grotendeels over. De details verdwenen.",
     "resultSilent": "Bij de krakerigste stand kreeg Miko er niets meer uit. Zelfs de woorden waren weggedrukt.",
     "conclusion": "Conclusie van Agent Echo",
-    "echoAfter": "Dát is de adder. De woorden komen door — maar het bewijs waar ik naar kijk zit bovenin het plaatje, en dat gooit compressie als eerste weg. Precies daarom sturen boeven spraakberichten.",
+    "echoAfter": "De woorden komen door. De hoge details verdwijnen als eerste. Daardoor wordt een nepstem na compressie nog lastiger te herkennen.",
     "start": "Zet de machine aan",
     "tryAll": "Luister eerst alle vier de standen",
     "clueZone": "Hier zoekt Echo naar bewijs",
@@ -190,39 +198,63 @@
     "mikoVerdict": "Klinkt prima! Bericht ontvangen.",
     "youAskedFor": "Wat jij vroeg",
     "mikoWrote": "Wat Miko opschreef",
-    "askEcho": "Vraag het aan Agent Echo",
-    "echoAlert": "ALARM! Deze stem komt uit een computer. Ik zie het meteen in het plaatje!",
-    "echoDisclosure": "Nou ja — \"meteen\" is wat groot gezegd. Ik weet dat deze nep is omdat jij hem net zelf in de machine hebt gemaakt, en dat staat in de demo opgeschreven. Er wordt op dit scherm niets geanalyseerd.",
-    "noClueDescription": "In dit geluids-plaatje is geen los plekje aan te wijzen — dat gebeurt bij goede nepstemmen.",
-    "lesson": "Miko verstond elk woord — maar hij hoorde niet dat het nep was. Daarom heb je allebei nodig: een luisteraar én een detective.",
+    "lesson": "Miko verstond elk woord. De herkomst bleef onduidelijk. Dat is precies het probleem met audio.",
     "noTranscript": "…",
     "scamTip": "Echte oplichters doen dit ook: ze bellen ouders met de nepstem van hun kind. Niet zeker? Hang op en bel terug op het nummer dat je zelf al hebt."
   },
   "final": {
-    "intro": "Nog één missie — en dit is degene die telt búiten deze zaal.",
+    "intro": "Nog één missie. Deze telt buiten de zaal.",
     "kicker": "De laatste test",
     "title": "Een bekende stem vraagt om geld",
-    "body": "Het is laat. Er komt een spraakbericht binnen van iemand die je goed kent. Er wordt om geld gevraagd, nú meteen. Echte oplichters zetten er meestal bij: \"zeg het nog even tegen niemand\" — zodat je niet gaat checken.",
+    "body": "Het is laat. Een bekende stem vraagt in een spraakbericht om geld. Het moet meteen en geheim blijven.",
     "playMessage": "Speel het bericht af",
     "question": "Wat doe jij?",
     "option": {
-      "send": "Meteen het geld overmaken — het is echt zijn of haar stem.",
+      "send": "Meteen het geld overmaken. Ik herken de stem.",
       "reply": "Terugberichten in datzelfde gesprek en iets vragen dat alleen hij of zij weet.",
       "callback": "Zelf bellen op het nummer dat je al in je telefoon hebt staan.",
-      "unsure": "Ik weet het eerlijk gezegd niet — ik zou bevriezen."
+      "unsure": "Ik weet het even niet."
     },
     "why": {
-      "send": "Daar is de zwendel precies op gebouwd. Een stem van wie je houdt, betwijfel je bijna niet, en tegen de tijd dat je het echte verhaal hoort is het geld weg. Dat de stem klopt, zegt niets — een paar seconden spraak is genoeg om hem na te maken.",
-      "reply": "Dit vóélt als checken, maar dat is het niet. Degene die dat bericht stuurde is nou juist waar je aan twijfelt, dus zijn antwoord bewijst niets. Een nepstem kan ook vragen beantwoorden, en wie een gestolen telefoon vasthoudt, kan persoonlijke vragen beantwoorden. Check via een kanaal dat JIJ kiest, niet dat van hen.",
-      "callback": "Precies goed. Let op wat je níét hoefde te doen: iets opmerken. Terugbellen op een nummer dat je al had, komt bij de echte persoon uit hoe goed de nepstem ook was — daarom werkt het ook als je oren zijn gefopt.",
-      "unsure": "Dat is een eerlijk antwoord, en zo voelen de meeste mensen het. Het goede nieuws: je hoeft het niet te weten. Doe hetzelfde als wanneer je zéker wist dat het nep was — hang op en bel terug op het nummer dat je al hebt. Blijkt het echt te zijn, dan is er niets verloren."
+      "send": "Een paar seconden audio kan genoeg zijn om een stem te kopiëren. Stemherkenning geeft dus te weinig zekerheid voor een betaling.",
+      "reply": "Je blijft dan in hetzelfde gesprek met dezelfde afzender. Kies zelf een ander kanaal om de persoon te bereiken.",
+      "callback": "Precies. Bel via het nummer dat al in je telefoon staat. Zo bereik je de echte persoon, ook bij een perfecte nepstem.",
+      "unsure": "Twijfel is genoeg reden om te stoppen. Bel de persoon via het nummer dat al in je telefoon staat."
     },
     "right": "Goed gedaan",
     "wrong": "Goed om te weten",
-    "takeaway": "Beter luisteren helpt hier niet. Check via een kanaal dat je zelf gekozen hebt.",
+    "takeaway": "Stop. Kies zelf een ander kanaal. Bel terug op een vertrouwd nummer.",
     "toDiploma": "Haal je diploma"
   },
   "station5": {
+    "name": "Kloon je eigen stem",
+    "title": "Jouw stem, nieuwe woorden",
+    "privacy": "Je opname blijft op deze MacBook en wordt na deze missie gewist.",
+    "checking": "Lokale modellen starten...",
+    "start": "Neem mijn stem op",
+    "recording": "Lees de zin hardop",
+    "readText": "Vandaag test ik hoe een computer mijn stem kopieert. Ik praat rustig en duidelijk, met mijn gewone ritme en klank.",
+    "review": "Dit is je echte opname. Klaar om er een nieuwe zin van te maken?",
+    "listenOriginal": "Luister naar jezelf",
+    "again": "Opnieuw opnemen",
+    "clone": "Kloon mijn stem",
+    "cloning": "De lokale AI bouwt jouw stem",
+    "wait": "Dit duurt meestal 20 tot 30 seconden.",
+    "cloneSays": "De kloon zegt",
+    "cloneText": "Dit klinkt als jouw stem. Deze zin heb jij nooit gezegd.",
+    "listenClone": "Luister naar de kloon",
+    "echoGuess": "Mijn modelgok: {label}. Betrouwbaarheid van deze gok: {confidence}.",
+    "echoUnsure": "Ik kon deze opname niet betrouwbaar beoordelen.",
+    "confidence": {
+      "low": "laag",
+      "medium": "middel",
+      "high": "hoog"
+    },
+    "lesson": "Tien seconden was genoeg om nieuwe woorden met jouw stem te maken. Een bekende stem is dus geen bewijs van wie er spreekt.",
+    "unavailable": "De lokale stemmodellen zijn nog niet klaar. Ga verder en laat de begeleider de MacBook-service controleren.",
+    "error": "Het klonen lukte niet. Je opname is gewist. Je kunt opnieuw proberen of doorgaan."
+  },
+  "station6": {
     "name": "Detective Diploma",
     "title": "Detective Diploma",
     "score": "Je hebt {score} van de {total} zaken opgelost",
@@ -239,22 +271,22 @@
     "crowd": "Vandaag: {n} bezoekers, gemiddeld {avg} goed.",
     "hardest": "De moeilijkste zaak fopte {pct}% van iedereen!",
     "verifyCrowd": "{pct}% koos ervoor om terug te bellen en te checken.",
-    "echoOutro": "Goed gedaan, detective! De eerste is de belangrijkste:",
+    "echoOutro": "AI verandert hoe we stemmen maken, delen en vertrouwen. Dit kun je vandaag al doen:",
     "tip1": "Vraagt een bekende stem om geld of een geheim? Hang op en bel terug op het nummer dat je zelf al hebt. Dat werkt ook als de nepstem perfect is.",
-    "tip2": "Adem, ruis en foutjes kunnen aanwijzingen zijn — bewijs zijn ze nooit. De beste nepstemmen hebben ze ook.",
-    "tip3": "Ook slimme mensen trappen erin. Even checken is slim, niet dom.",
+    "tip2": "Adem, ruis en foutjes helpen soms. Apps en telefoons drukken zulke details weg.",
+    "tip3": "Iedereen kan worden gefopt. Checken kost één telefoontje.",
     "restart": "Opnieuw beginnen"
   },
   "clue": {
-    "tier1": "Hoor je hoe glad deze stem is? Kijk in het kader: nauwelijks gewiebel. Dat is hier mijn aanwijzing — de meeste echte stemmen trillen een beetje. Nieuwere nepstemmen kunnen ook trillen.",
-    "tier2": "Kijk in het kader: leeg en stil. Geen adem, geen ruis. Dáár lette ik op bij dit fragment — al kan een schoongepoetste echte opname er net zo kaal uitzien.",
+    "tier1": "Deze stem klinkt erg glad. In het kader zie je weinig gewiebel. Nieuwe nepstemmen kunnen ook wél wiebelen.",
+    "tier2": "In het kader zie je een kale stilte tussen de woorden. Een schone echte opname kan er hetzelfde uitzien.",
     "tier3": "Bijna echt! Maar de strepen in het kader lopen erg strak en gelijkmatig. Dat is bij deze een aanwijzing. Een strakke streep beslist het nooit alleen.",
-    "tier4": "Goed gemaakt — kijk hoe stil het wordt tussen de woorden. Dat was mijn aanwijzing. Een stille kamer doet hetzelfde met een echte opname.",
-    "tier5": "Zelfs ik keek twee keer. In het kader: niets rommeligs, niets menselijks. Een aanwijzing, geen oordeel — hier houdt mijn blik ongeveer op.",
-    "smoothHarmonics": "Kijk hoe glad en gelijkmatig deze strepen zijn. Een echte stem wiebelt meestal een beetje, dus dit is een tweede blik waard — maar \"té glad\" is een hint, geen antwoord.",
-    "noBreath": "Waar is de adem? Mensen halen meestal adem voordat ze praten, en deze stem begint zomaar. Verdacht — al worden veel echte fragmenten strak tot het eerste woord afgeknipt.",
-    "hfCutoff": "Kijk bovenin: het hoge geluid stopt plotseling, alsof er een deksel op zit. Dat gebeurt bij sommige nepstemmen — en bij élk telefoongesprek, en daarom verdwijnt deze aanwijzing in missie 3.",
-    "tooClean": "Deze was moeilijk! Geen gesmak, geen ruis, geen echo van de kamer. Té schoon is een aanwijzing — een studiomicrofoon kan óók té schoon zijn."
+    "tier4": "Kijk naar de stilte tussen de woorden. Een stille kamer kan bij een echte opname hetzelfde patroon geven.",
+    "tier5": "Dit plaatje is heel schoon en gelijkmatig. Dat is een zwakke aanwijzing. Hier stopt mijn analyse ongeveer.",
+    "smoothHarmonics": "De strepen lopen glad en gelijkmatig. Een menselijke stem wiebelt vaak iets meer. Zie dit als een hint.",
+    "noBreath": "De stem begint direct, zonder hoorbare adem. Echte fragmenten worden soms ook strak afgeknipt.",
+    "hfCutoff": "Bovenin stopt het hoge geluid plotseling. Dat zie je bij sommige nepstemmen en ook bij telefoongesprekken.",
+    "tooClean": "Je hoort weinig gesmak, ruis of galm. Een studiomicrofoon kan een echte opname net zo schoon maken."
   },
   "voice": {
     "nl_female": "Vrouw",

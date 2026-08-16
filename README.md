@@ -12,14 +12,15 @@ suspicious, reads spectrograms, catches the fakes. The punchline, landed through
 play in Station 4: Miko transcribes a deepfake perfectly and never notices it is
 fake. Recognising speech and detecting forgery are different jobs; you need both.
 
-The five stations (~10 min): **1** how sound becomes text, **2** Echt of Nep? —
-guess a clip real or fake, **3** the compression machine, **4** the nepstem-fabriek,
-**5** Detective Diploma.
+The six stations take about 12 minutes: **1** how sound becomes text, **2** Echt
+of Nep?, **3** what channels and compression remove, **4** make a sentence,
+**5** clone your own voice, **6** a practical safety quiz and the diploma.
 
 ## Quick start (local development)
 
-The whole runtime is one **Next.js 16** app in `web/`. It needs **no GPU and no
-models** — it serves pre-generated audio plus one tiny stats API. For development
+The interface is one **Next.js 16** app in `web/`. Stations 1 to 4 and 6 use the
+prepared pack. Station 5 connects to a private model service on the MacBook.
+For development
 without Docker, install [Node.js 22](https://nodejs.org/en/download),
 [Python 3.12](https://www.python.org/downloads/), and
 [FFmpeg/ffprobe](https://ffmpeg.org/download.html) with libmp3lame support.
@@ -53,8 +54,9 @@ sample pack. See
 
 If an IT or hosting team will run the demo, ask them to **deploy this application
 as a Linux Docker container** (or as the included Docker Compose service). The
-runtime is CPU-only, listens on port `3000`, needs no model server or GPU, and
-stores its anonymous statistics in `/app/data`. Put the service behind the
+web container listens on port `3000` and stores anonymous statistics in
+`/app/data`. Run the cloning service natively on the MacBook so PyTorch can use
+Apple MPS. Put the web service behind the
 organisation's usual HTTPS reverse proxy when it is exposed beyond a trusted
 local network.
 
@@ -106,7 +108,7 @@ That pipeline is not required to develop or run the app.
 
 ```
 web/src/app/           # Next.js pages + API routes (events, stats, health)
-web/src/components/    # DemoShell + kiosk chrome + stations/ (the five station UIs)
+web/src/components/    # DemoShell + kiosk chrome + the six station UIs
 web/src/i18n/          # nl.json / en.json — ALL user-visible copy lives here
 web/src/lib/           # the contracts and the logic: manifest schema, event
                        # handling, stats, kiosk flow, audio state, i18n rules
@@ -127,10 +129,10 @@ stations stay thin.
 The demo is about deception, so it does not practise any. Spectrogram tells are
 presented as clues about the clips in the pack, never as a test that works on the
 next voice message: modern fakes add breath and room noise, and plenty of genuine
-recordings sound spotless. Agent Echo is theatre with a script, and says so —
-the pack ships with prepared labels because we generated the fakes ourselves, and
-nothing on screen analyses audio. Every transcript is the recogniser's real output,
-mistakes included.
+recordings sound spotless. Participants make the Echt of Nep? judgments. Echo
+explains the prepared evidence afterward. In Station 5, Echo makes one real local
+DF Arena model guess on the newly generated clone. The model can be wrong. Every
+transcript is the recogniser's real output, mistakes included.
 
 Which is why the demo ends on a scenario rather than a score: a voice you know asks
 for money, and the answer is to hang up and call back on a number you already have.
@@ -139,8 +141,12 @@ knows they can be.
 
 ## Privacy
 
-No microphone access, no audio upload, no personal data, no cookies. The only stored
-data is an anonymous per-clip counter plus a session score, so the demo can say "71%
+Station 5 uses the microphone after the participant taps record. The recording
+stays on the MacBook. A request-scoped temporary WAV is deleted after generation,
+generated audio is returned with `no-store`, and browser object URLs are cleared
+when the station ends. No participant audio goes to an inference provider.
+
+The only stored interaction data is an anonymous per-clip counter plus a session score, so the demo can say "71%
 of visitors were fooled by this one". Session IDs are random, in-memory, and never
 correlated across visits; a reset forgets the id on the server as well as in the
 browser. Event retention defaults to 90 days and can be changed with
@@ -161,6 +167,8 @@ read, logged or stored anywhere in the app.
   your intended use before publishing. Do not describe the whole sample pack as permissively
   licensed.
 - **ASR transcripts:** `mistralai/Voxtral-Mini-4B-Realtime-2602`, Apache-2.0.
+- **Live voice cloning:** Chatterbox Multilingual V3, MIT. It runs locally on the MacBook.
+- **Live clone detector:** DF Arena 500M, custom non-commercial model licence. It runs locally on the MacBook.
 
 See [NOTICE](NOTICE) for the full attribution notice.
 
