@@ -49,7 +49,7 @@ typecheck, production build, sample-pack validation, and API end-to-end tests.
 
 ## Docker Compose
 
-From a fresh clone, this is the complete startup command:
+From a fresh clone, this starts the web demo:
 
 ```bash
 git clone https://github.com/jmqcooper/deepfake-detective-demo.git
@@ -68,7 +68,13 @@ on macOS, Linux, and Windows. It deliberately does not put the large voice model
 inside Docker, because doing so would hide Apple MPS and complicate host GPU
 support. The web demo still works without them; to enable live cloning, run the
 separate local service documented in
-[docs/LOCAL_VOICE_CLONING.md](docs/LOCAL_VOICE_CLONING.md).
+[docs/LOCAL_VOICE_CLONING.md](docs/LOCAL_VOICE_CLONING.md). That guide includes
+one-time setup, virtual-environment activation, normal restart, and health-check
+commands for macOS/Linux and Windows.
+
+The resulting local layout is: browser → Docker web app → native voice service.
+Docker reaches the service through `host.docker.internal`; no hosted inference
+service is involved.
 
 ## Project layout
 
