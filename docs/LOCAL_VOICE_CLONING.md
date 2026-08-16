@@ -18,52 +18,78 @@ Chatterbox and PyTorch. Set `VOICE_CLONE_DEVICE=cpu`, `cuda`, or `mps` to overri
 automatic selection. The service exits at startup when a requested accelerator
 is unavailable instead of silently falling back.
 
-## Install on macOS or Linux
+## Set up once on macOS or Linux
 
 ```bash
 python3.12 -m venv .venv-voice
-./.venv-voice/bin/python -m pip install -r tools/voice-clone-requirements.txt
-./.venv-voice/bin/python -m tools.voice_clone_service
+source .venv-voice/bin/activate
+python -m pip install -r tools/voice-clone-requirements.txt
+deactivate
 ```
 
-## Install on Windows
+## Set up once on Windows
 
 Run in PowerShell from the repository root:
 
 ```powershell
 py -3.12 -m venv .venv-voice
-.\.venv-voice\Scripts\python.exe -m pip install -r tools\voice-clone-requirements.txt
-.\.venv-voice\Scripts\python.exe -m tools.voice_clone_service
+.\.venv-voice\Scripts\Activate.ps1
+python -m pip install -r tools\voice-clone-requirements.txt
+deactivate
 ```
+
+Activation is optional. If PowerShell blocks `Activate.ps1`, use
+`.\.venv-voice\Scripts\python.exe` instead of `python` in the commands below.
 
 For NVIDIA acceleration, install a CUDA-enabled PyTorch build compatible with
 the pinned Chatterbox version and the installed NVIDIA driver. Confirm that
 `torch.cuda.is_available()` returns `True`; otherwise the service uses CPU.
 
-The first start downloads the pinned model weights. Wait until
-<http://127.0.0.1:8765/health> reports `"ready": true`. Its `device` field shows
-`cuda`, `mps`, or `cpu`.
+## Start it for local development
 
-## Connect the web app
-
-With `make dev`, the defaults work: both processes use
-`http://127.0.0.1:8765`.
-
-With the web app in Docker, the container connects through
-`host.docker.internal`. Start the native service on an address Docker can reach:
+Start the model service in one terminal:
 
 ```bash
-VOICE_CLONE_HOST=0.0.0.0 ./.venv-voice/bin/python -m tools.voice_clone_service
-docker compose up -d --build
+source .venv-voice/bin/activate
+python -m tools.voice_clone_service
 ```
 
-PowerShell equivalent:
+On Windows PowerShell, activate it with
+`.\.venv-voice\Scripts\Activate.ps1`, then run the same `python -m` command.
+Start `make dev` in a second terminal. Both processes use
+`http://127.0.0.1:8765` automatically.
+
+The first service start downloads the pinned model weights. Wait until
+<http://127.0.0.1:8765/health> reports `"ready": true`. Its `device` field shows
+`cuda`, `mps`, or `cpu`. Stop the service with `Ctrl+C`; activate the environment
+and run the command again next time.
+
+## Start it beside Docker
+
+Docker runs only the web app. The voice service runs natively beside it so it can
+use the host GPU. In terminal 1 on macOS or Linux:
+
+```bash
+source .venv-voice/bin/activate
+VOICE_CLONE_HOST=0.0.0.0 python -m tools.voice_clone_service
+```
+
+Terminal 1 on Windows PowerShell:
 
 ```powershell
+.\.venv-voice\Scripts\Activate.ps1
 $env:VOICE_CLONE_HOST = "0.0.0.0"
-.\.venv-voice\Scripts\python.exe -m tools.voice_clone_service
+python -m tools.voice_clone_service
+```
+
+Then, in terminal 2:
+
+```bash
 docker compose up -d --build
 ```
+
+Open <http://localhost:3000>. The Docker container connects to the native service
+through `host.docker.internal`; no extra Compose service is required.
 
 Binding to `0.0.0.0` can make port 8765 reachable from the local network. Keep
 that port blocked by the host firewall; only the local Docker web container
