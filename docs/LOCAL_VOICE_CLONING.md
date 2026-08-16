@@ -1,77 +1,84 @@
 # Local live voice cloning
 
-Live voice cloning works on the target MacBook Pro. It runs as a native local
-service next to the web container so PyTorch can use Apple MPS. Participant audio
-stays on that machine.
+Station 5 uses a separate native service for Chatterbox Multilingual V3 and the
+DF Arena detector. Inference stays on the exhibit computer and the temporary
+reference recording is deleted after each request.
 
-## Recommended model
+## Supported hardware
 
-The service uses **Chatterbox Multilingual V3** from Resemble AI. It supports
-Dutch, accepts a short reference clip, includes an output watermark and uses an
-MIT licence. The weights are cached during setup. Recordings are never sent to
-Resemble AI or another inference provider.
+The service chooses the fastest available PyTorch device automatically:
 
-Voxtral stays useful for the prepared sample pack. Its open model supports Dutch,
-though the current vLLM-Omni voice-cloning path is still marked as gated upstream.
-That makes it a poor dependency for the live station today.
+1. NVIDIA CUDA on Linux or Windows
+2. Apple MPS on Apple Silicon
+3. CPU on macOS, Linux, or Windows
 
-## Participant flow
+CPU mode is functional but can take several minutes per clone. Apple MPS is the
+tested exhibit configuration; CUDA support follows the device path supported by
+Chatterbox and PyTorch. Set `VOICE_CLONE_DEVICE=cpu`, `cuda`, or `mps` to override
+automatic selection. The service exits at startup when a requested accelerator
+is unavailable instead of silently falling back.
 
-1. Show one short privacy line and ask the participant to continue.
-2. Record 10 seconds while they read a fixed Dutch or English sentence.
-3. Send the recording only to the same-host model service.
-4. Generate one fixed, harmless sentence with stable local settings.
-5. Play the clone, then let the local DF Arena 500M model make Echo's guess.
-6. Delete the reference recording and generated clip when the station ends or the
-   kiosk resets.
-
-The live option appears only after a same-origin health check confirms both
-models are ready. If the service is unavailable, the station explains this and
-lets the participant continue.
-
-## Privacy and abuse controls
-
-- Keep reference audio in memory or a per-request temporary file.
-- Delete every temporary file in a `finally` block.
-- Disable request-body logging on the web proxy and model service.
-- Accept only fixed exhibit sentences and a maximum recording length of 12 seconds.
-- Return `Cache-Control: no-store` for generated audio.
-- Bind the model service to `127.0.0.1`. The web proxy is its only caller.
-- Clear object URLs in the browser on reset.
-
-## Tested result on the MacBook Pro
-
-- Apple M4 Pro, 24 GB unified memory, 20-core GPU
-- 4.2-second Dutch reference recording
-- warm single clone plus three detector checks: 12.9 seconds
-- generated WAV: mono PCM16, 24 kHz
-- Echo verdict: fake, high agreement
-- voice-encoder similarity in the earlier model test: 0.922 cosine
-- local Whisper recovered the full generated Dutch sentence, apart from reading
-  the name Echo as Ego
-
-## Speaker-similarity tuning
-
-An A/B run on the same 8.06-second Dutch reference compared the upstream defaults
-with the stable kiosk profile. The Chatterbox voice encoder scored the default at
-0.8590 cosine similarity and the kiosk profile at 0.9207. The tuned request,
-including Echo's detector checks, completed in 23.18 seconds on the M4 Pro.
-The English profile uses seed 3407 and temperature 0.7. It scored 0.8915, up
-from 0.8586 with the earlier profile. The service keeps separate fixed profiles
-so a participant gets a stable result.
-
-XTTS-v2 was also tested locally on the same references. It scored 0.8365 for
-Dutch and 0.7253 for English. Its Coqui Public Model License is also more
-restrictive than Chatterbox's MIT license, so it is not part of the station.
-
-## Start the service
+## Install on macOS or Linux
 
 ```bash
 python3.12 -m venv .venv-voice
-./.venv-voice/bin/pip install -r tools/voice-clone-requirements.txt
-./.venv-voice/bin/python tools/voice_clone_service.py
-curl http://127.0.0.1:8765/health
+./.venv-voice/bin/python -m pip install -r tools/voice-clone-requirements.txt
+./.venv-voice/bin/python -m tools.voice_clone_service
 ```
 
-Wait until health reports `"ready": true`, then start the web app. The first
-setup downloads model weights. Do that before opening the demo.
+## Install on Windows
+
+Run in PowerShell from the repository root:
+
+```powershell
+py -3.12 -m venv .venv-voice
+.\.venv-voice\Scripts\python.exe -m pip install -r tools\voice-clone-requirements.txt
+.\.venv-voice\Scripts\python.exe -m tools.voice_clone_service
+```
+
+For NVIDIA acceleration, install a CUDA-enabled PyTorch build compatible with
+the pinned Chatterbox version and the installed NVIDIA driver. Confirm that
+`torch.cuda.is_available()` returns `True`; otherwise the service uses CPU.
+
+The first start downloads the pinned model weights. Wait until
+<http://127.0.0.1:8765/health> reports `"ready": true`. Its `device` field shows
+`cuda`, `mps`, or `cpu`.
+
+## Connect the web app
+
+With `make dev`, the defaults work: both processes use
+`http://127.0.0.1:8765`.
+
+With the web app in Docker, the container connects through
+`host.docker.internal`. Start the native service on an address Docker can reach:
+
+```bash
+VOICE_CLONE_HOST=0.0.0.0 ./.venv-voice/bin/python -m tools.voice_clone_service
+docker compose up -d --build
+```
+
+PowerShell equivalent:
+
+```powershell
+$env:VOICE_CLONE_HOST = "0.0.0.0"
+.\.venv-voice\Scripts\python.exe -m tools.voice_clone_service
+docker compose up -d --build
+```
+
+Binding to `0.0.0.0` can make port 8765 reachable from the local network. Keep
+that port blocked by the host firewall; only the local Docker web container
+needs it. Override `VOICE_CLONE_URL` in Compose if the service runs at another
+local address.
+
+## Participant flow
+
+The visitor records ten seconds, approves the recording, and receives one fixed
+generated sentence. The local detector then makes its own real-or-fake guess.
+The option appears only when both models are ready; when the service is absent,
+the station explains that it is unavailable and lets the visitor continue.
+
+## Tested exhibit result
+
+On an Apple M4 Pro with 24 GB unified memory, a warm Dutch clone plus three
+detector checks took about 13 seconds. The generated file was mono PCM16 at
+24 kHz. Other devices will vary, especially in CPU mode.

@@ -28,6 +28,10 @@ from transformers import pipeline
 
 from chatterbox import mtl_tts as chatterbox_mtl
 from chatterbox.mtl_tts import ChatterboxMultilingualTTS
+try:
+    from tools.voice_device import resolve_device
+except ModuleNotFoundError:  # Supports `python tools/voice_clone_service.py` too.
+    from voice_device import resolve_device
 
 CHATTERBOX_REPO = "ResembleAI/chatterbox"
 CHATTERBOX_REVISION = "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18"
@@ -46,7 +50,11 @@ GENERATION_PROFILES = {
     "en": {"seed": 3407, "temperature": 0.7, "cfg_weight": 0.5},
 }
 
-device = "mps" if torch.backends.mps.is_available() else "cpu"
+device = resolve_device(
+    os.getenv("VOICE_CLONE_DEVICE", "auto"),
+    cuda_available=torch.cuda.is_available(),
+    mps_available=torch.backends.mps.is_available(),
+)
 clone_model: ChatterboxMultilingualTTS | None = None
 detector = None
 load_error: str | None = None
@@ -242,4 +250,8 @@ async def clone(audio: UploadFile = File(...), lang: str = Form(...)) -> Respons
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="127.0.0.1", port=int(os.getenv("VOICE_CLONE_PORT", "8765")))
+    uvicorn.run(
+        app,
+        host=os.getenv("VOICE_CLONE_HOST", "127.0.0.1"),
+        port=int(os.getenv("VOICE_CLONE_PORT", "8765")),
+    )
