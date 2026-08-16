@@ -1,4 +1,4 @@
-# Native macOS service. Run outside Docker so PyTorch can use Apple MPS.
+# Native local service. Run outside Docker to use Apple MPS or NVIDIA CUDA.
 # Perth still imports pkg_resources, which setuptools 81+ removed.
 setuptools==80.9.0
 chatterbox-tts==0.1.7

@@ -86,7 +86,7 @@
     },
     "b5": {
       "title": "Clone your own voice",
-      "text": "Read aloud for ten seconds. The MacBook creates a new sentence in your voice, locally. Agent Echo hears only the result and makes its own guess."
+      "text": "Read aloud for ten seconds. This computer creates a new sentence in your voice, locally. Agent Echo hears only the result and makes its own guess."
     }
   },
   "station1": {
@@ -229,7 +229,7 @@
   "station5": {
     "name": "Clone your own voice",
     "title": "Your voice, new words",
-    "privacy": "Your recording stays on this MacBook and is deleted after this mission.",
+    "privacy": "Your recording stays on this computer and is deleted after this mission.",
     "checking": "Starting the local models...",
     "start": "Record my voice",
     "recording": "Read the sentence aloud",
@@ -239,7 +239,7 @@
     "again": "Record again",
     "clone": "Clone my voice",
     "cloning": "The local AI is building your voice",
-    "wait": "This usually takes 20 to 30 seconds.",
+    "wait": "This can take several minutes on a computer without GPU acceleration.",
     "cloneSays": "The clone says",
     "cloneText": "This sounds like your voice. You never said this sentence.",
     "listenClone": "Listen to the clone",
@@ -251,7 +251,7 @@
       "high": "high"
     },
     "lesson": "Ten seconds was enough to create new words in your voice. A familiar voice is not proof of who is speaking.",
-    "unavailable": "The local voice models are still starting. Continue and ask the facilitator to check the MacBook service.",
+    "unavailable": "The local voice models are still starting. Continue and ask the facilitator to check the local model service.",
     "error": "Cloning failed. Your recording was deleted. You can try again or continue."
   },
   "station6": {

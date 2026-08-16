@@ -1,13 +1,13 @@
 # Museum operations runbook
 
 This installation is offline-first. Station 5 records a visitor for ten seconds,
-processes the audio on the MacBook, then deletes it. The only stored data is
+processes the audio on the exhibit computer, then deletes it. The only stored data is
 anonymous interaction telemetry. Keep the sample pack, model cache and statistics
 volume on the machine.
 
 ## Before opening
 
-1. Start the native voice service with `./.venv-voice/bin/python tools/voice_clone_service.py` and wait for `curl --fail http://127.0.0.1:8765/health` to report `"ready":true`.
+1. Start the native voice service with `./.venv-voice/bin/python -m tools.voice_clone_service` and wait for `curl --fail http://127.0.0.1:8765/health` to report `"ready":true`.
 2. Start the app with `docker compose up -d --build`.
 3. Wait for `docker compose ps` to report the web service as healthy, then check `curl --fail http://127.0.0.1:3000/api/health`.
 4. Open the sound check and confirm both speakers are audible. Record and clone one test voice. Confirm microphone permission, playback and Echo's guess.

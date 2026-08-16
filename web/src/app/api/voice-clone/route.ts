@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 
 const SERVICE_URL = process.env.VOICE_CLONE_URL ?? "http://127.0.0.1:8765";
 const MAX_BYTES = 4 * 1024 * 1024;
+// CPU fallback is intentionally supported and can take several minutes.
+const CLONE_TIMEOUT_MS = 5 * 60 * 1_000;
 
 export async function POST(request: Request): Promise<Response> {
   const origin = request.headers.get("origin");
@@ -30,7 +32,7 @@ export async function POST(request: Request): Promise<Response> {
     const upstream = await fetch(`${SERVICE_URL}/clone`, {
       method: "POST",
       body: form,
-      signal: AbortSignal.timeout(90_000),
+      signal: AbortSignal.timeout(CLONE_TIMEOUT_MS),
     });
     if (!upstream.ok) {
       return Response.json({ error: "clone_unavailable" }, { status: 503 });

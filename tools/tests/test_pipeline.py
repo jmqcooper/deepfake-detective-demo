@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from tools import build_cv_pack, prepare_samples
+from tools.voice_device import resolve_device
 
 
 def case_clips(langs: tuple[str, ...] = ("nl", "en")) -> list[dict]:
@@ -30,6 +31,25 @@ def case_clips(langs: tuple[str, ...] = ("nl", "en")) -> list[dict]:
 
 
 class PipelineContractTests(unittest.TestCase):
+    def test_voice_device_prefers_cuda_then_mps_then_cpu(self) -> None:
+        self.assertEqual(
+            resolve_device("auto", cuda_available=True, mps_available=True), "cuda"
+        )
+        self.assertEqual(
+            resolve_device("auto", cuda_available=False, mps_available=True), "mps"
+        )
+        self.assertEqual(
+            resolve_device("auto", cuda_available=False, mps_available=False), "cpu"
+        )
+
+    def test_voice_device_override_must_be_available(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, "CUDA is not available"):
+            resolve_device("cuda", cuda_available=False, mps_available=False)
+        with self.assertRaisesRegex(RuntimeError, "MPS is not available"):
+            resolve_device("mps", cuda_available=False, mps_available=False)
+        with self.assertRaisesRegex(ValueError, "auto, cuda, mps, or cpu"):
+            resolve_device("tpu", cuda_available=False, mps_available=False)
+
     def test_manifest_accepts_balanced_bilingual_cases(self) -> None:
         prepare_samples.verify_manifest_contract(case_clips(), require_bilingual=True)
 
