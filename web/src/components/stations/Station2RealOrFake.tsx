@@ -38,6 +38,7 @@ const AUTOPLAY_DELAY_MS = 650;
  * label from the validated manifest. The browser no longer asserts "I was
  * right"; it asks, and the same response carries the crowd aggregate, so the
  * "71% were fooled" line can no longer race the write that produced it.
+ * Echo explains the evidence only after the visitor commits to an answer.
  */
 export function Station2RealOrFake({
   clips,
@@ -181,7 +182,7 @@ export function Station2RealOrFake({
             className="rise text-lg font-bold text-ink-400 sm:text-xl"
             style={{ animationDelay: "170ms" }}
           >
-            {t("station5.score", { score, total: rounds.length })}
+            {t("station6.score", { score, total: rounds.length })}
           </p>
         </div>
         <PersonaBubble who="echo" delayMs={350}>
@@ -340,7 +341,7 @@ function Reveal({
   onNext: () => void;
 }) {
   const t = useT(lang);
-  const beat = useBeat([700, 1500, 2400]);
+  const beat = useBeat([650, 1450, 2350]);
 
   // A real clip has no forensic "tell" to circle — Echo instead points out the
   // messy human bits (breaths, room tone) these particular fakes lack. Three
@@ -356,11 +357,13 @@ function Reveal({
 
   return (
     <div className="flex flex-col gap-4 sm:gap-5">
-      <div className="flex flex-col items-center gap-3">
-        <Stamp
-          correct={correct}
-          text={correct ? t("station2.solved") : t("station2.fooled")}
-        />
+      <div className="flex min-h-[9rem] flex-col items-center gap-3">
+        {beat >= 1 && (
+          <Stamp
+            correct={correct}
+            text={correct ? t("station2.solved") : t("station2.fooled")}
+          />
+        )}
         {/* The stat slot keeps its height whether or not the numbers arrive, so
             a slow response can't shove the evidence around mid-read. */}
         <div className="flex min-h-[4.5rem] flex-col items-center gap-2 text-center">
@@ -397,18 +400,9 @@ function Reveal({
             clueDescription={explanation}
           />
 
-          {/* Two sentences that keep this station honest. The first: a clue is
-              not proof — the newest fakes add breath and room noise, and plenty
-              of genuine recordings sound implausibly clean. The second: Echo is
-              not analysing anything. He is reading labels that were prepared
-              offline with the samples. Letting a child leave believing a
-              detective AI just listened would be the worst thing this demo
-              could teach. */}
+          {/* These are useful clues, not a universal detection rule. */}
           <p className="text-xs leading-relaxed text-ink-400 sm:text-sm">
             {t("station2.clueCaveat")}
-          </p>
-          <p className="text-xs leading-relaxed text-ink-400 sm:text-sm">
-            {t("station2.echoDisclosure")}
           </p>
         </>
       )}

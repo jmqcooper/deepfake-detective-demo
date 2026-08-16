@@ -73,7 +73,7 @@ test("an unknown placeholder is left visible rather than rendered as undefined",
 
 test("the take-home advice is present in both languages", () => {
   for (const lang of LANGUAGES) {
-    for (const key of ["station5.tip1", "final.takeaway", "final.why.callback"]) {
+    for (const key of ["station6.tip1", "final.takeaway", "final.why.callback"]) {
       const copy = lookup(dictionaries[lang], key) ?? "";
       assert.ok(copy.length > 20, `${lang}: ${key} is missing or too short`);
     }
@@ -101,11 +101,9 @@ test("the clue copy is framed as a clue rather than as proof", () => {
   }
 });
 
-test("both languages disclose that no detector is running", () => {
+test("both languages explain that Echo's live clone verdict is a model guess", () => {
   for (const lang of LANGUAGES) {
-    for (const key of ["station2.echoDisclosure", "station4.echoDisclosure"]) {
-      const copy = lookup(dictionaries[lang], key) ?? "";
-      assert.ok(copy.length > 40, `${lang}: ${key} is missing`);
-    }
+    const copy = lookup(dictionaries[lang], "station5.echoGuess") ?? "";
+    assert.match(copy.toLowerCase(), /model/);
   }
 });

@@ -39,7 +39,7 @@ export const MAX_BODY_BYTES = 2_048;
 
 const commonFields = {
   sessionId: z.string().regex(UUID_V4_PATTERN, "must be a uuid v4"),
-  station: z.number().int().min(1).max(5),
+  station: z.number().int().min(1).max(6),
   lang: z.enum(["nl", "en"]),
 };
 

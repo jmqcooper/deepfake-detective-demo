@@ -35,7 +35,8 @@ import { Station1Brain } from "@/components/stations/Station1Brain";
 import { Station2RealOrFake } from "@/components/stations/Station2RealOrFake";
 import { Station3Compression } from "@/components/stations/Station3Compression";
 import { Station4Factory } from "@/components/stations/Station4Factory";
-import { Station5Diploma } from "@/components/stations/Station5Diploma";
+import { Station5VoiceClone } from "@/components/stations/Station5VoiceClone";
+import { Station6Diploma } from "@/components/stations/Station5Diploma";
 
 export function DemoShell() {
   const [lang, setLang] = useLang();
@@ -73,7 +74,7 @@ export function DemoShell() {
   }, [flow.station, resetSession, track]);
 
   const finishVisit = useCallback(async () => {
-    await track({ station: 5, type: "station_complete" });
+    await track({ station: 6, type: "station_complete" });
     restart();
   }, [restart, track]);
 
@@ -85,7 +86,7 @@ export function DemoShell() {
     announce(t(`station${stationNumber(flow.station)}.name`));
   }, [flow.station, t, track]);
 
-  // A visitor who wanders off must never block the next one. Station 5 resets
+  // A visitor who wanders off must never block the next one. Station 6 resets
   // sooner than the rest — a finished visitor is standing there reading.
   useIdleReset(idleTimeoutMs(flow), restart);
 
@@ -134,7 +135,7 @@ export function DemoShell() {
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 overflow-x-hidden p-3 sm:gap-6 sm:p-4 md:p-8">
       <Announcer />
 
-      {/* Two rows on purpose. Squeezing personas, title, a five-segment rail, a
+      {/* Two rows on purpose. Squeezing personas, title, the progress rail, a
           language switch and a skip button onto one line overflowed a 320px
           viewport by roughly a third — the skip control, the one thing that
           unblocks an abandoned kiosk, was the part that fell off the edge. */}
@@ -264,7 +265,14 @@ export function DemoShell() {
         )}
 
         {flow.phase === "station" && flow.station === 4 && (
-          <Station5Diploma
+          <Station5VoiceClone
+            lang={lang}
+            onDone={() => go({ type: "advance" })}
+          />
+        )}
+
+        {flow.phase === "station" && flow.station === 5 && (
+          <Station6Diploma
             score={score}
             total={total || 5}
             lang={lang}
@@ -299,7 +307,7 @@ function pickScamClip(
 /**
  * The mission card between stations. Context lands BEFORE the interaction:
  * who is speaking, what the mission is, one button. Doubles as a breather so
- * the five stations read as chapters instead of one endless screen.
+ * the six stations read as chapters instead of one endless screen.
  */
 function Briefing({
   station,
@@ -338,6 +346,40 @@ function Briefing({
         >
           {t(`brief.b${n}.text`)}
         </p>
+
+        {station === 1 && (
+          <section
+            className="rise w-full max-w-3xl rounded-[24px] bg-ink-800/75 p-4 text-left ring-1 ring-white/10 ring-inset sm:p-5"
+            style={{ animationDelay: "240ms" }}
+            aria-labelledby="real-or-fake-field-guide"
+          >
+            <p
+              id="real-or-fake-field-guide"
+              className="mb-3 font-mono text-[11px] font-bold tracking-[0.18em] text-echo-300 uppercase sm:text-xs"
+            >
+              {t("brief.b2.hintTitle")}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[18px] bg-ink-900/70 p-4 ring-1 ring-white/[0.06] ring-inset">
+                <p className="font-display text-base font-extrabold text-white sm:text-lg">
+                  {t("brief.b2.hintSpecTitle")}
+                </p>
+                <p className="mt-1 text-sm leading-relaxed font-semibold text-white/70 sm:text-base">
+                  {t("brief.b2.hintSpec")}
+                </p>
+              </div>
+              <div className="rounded-[18px] bg-ink-900/70 p-4 ring-1 ring-white/[0.06] ring-inset">
+                <p className="font-display text-base font-extrabold text-white sm:text-lg">
+                  {t("brief.b2.hintAudioTitle")}
+                </p>
+                <p className="mt-1 text-sm leading-relaxed font-semibold text-white/70 sm:text-base">
+                  {t("brief.b2.hintAudio")}
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
+
         <BigButton onClick={onStart} tone={who} className="halo mt-1">
           {t("brief.start")}
         </BigButton>

@@ -1,13 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type {
-  Clip,
-  ClueBox,
-  FactoryClip,
-  FakeFactory,
-} from "@/components/manifest-types";
-import { useAudio, useBeat, useT, type Lang } from "@/components/kiosk/hooks";
+import type { Clip, FactoryClip, FakeFactory } from "@/components/manifest-types";
+import { useAudio, useT, type Lang } from "@/components/kiosk/hooks";
 import { announce } from "@/components/kiosk/announcer";
 import {
   AudioProblem,
@@ -16,7 +11,6 @@ import {
   Persona,
   PersonaBubble,
   PlayButton,
-  Spectrogram,
   StationCard,
   Typewriter,
 } from "@/components/kiosk/ui";
@@ -29,8 +23,7 @@ type Phase =
   | "building"
   | "sent"
   | "listening"
-  | "verdict"
-  | "echo";
+  | "verdict";
 
 const BUILD_MS = 1600;
 const SEND_MS = 1100;
@@ -41,12 +34,12 @@ const SEND_MS = 1100;
  * The visitor picks a sentence and a voice, the machine builds the fake, and Miko
  * transcribes it *perfectly* and is delighted with himself. He has no idea it is
  * fake, because recognising words and detecting forgery are different jobs. Then
- * Echo takes one look and catches it.
+ * Echo explains why understanding the words says little about who made them.
  *
  * The choreography is strict, because this is a punchline and punchlines die
  * when the beats overlap: the machine builds, the message travels, Miko WRITES
  * WHILE THE AUDIO PLAYS, and only after his pen stops does his cheerful verdict
- * appear — followed, one tap later, by Echo's alarm.
+ * appear, followed by the lesson.
  *
  * And the choreography is driven by the audio element, not by a timer. It used
  * to run on `setTimeout`, so on a muted tablet or a missing file Miko would
@@ -106,12 +99,6 @@ export function Station4Factory({
   const transcript =
     chosen && "transcript" in chosen ? (chosen.transcript ?? "") : "";
   const requested = chosen && "text" in chosen ? chosen.text : "";
-  const clue = chosen && "clue" in chosen ? chosen.clue : null;
-  const spectrogram = chosen
-    ? "spectrogram" in chosen && typeof chosen.spectrogram === "string"
-      ? chosen.spectrogram
-      : (chosen as Clip).spectrogram.image
-    : "";
 
   // Theatre, in two beats: the machine "builds" (it's a lookup — the wait
   // sells the idea that making a fake voice is something a machine simply
@@ -310,7 +297,7 @@ export function Station4Factory({
         </div>
       )}
 
-      {(phase === "listening" || phase === "verdict" || phase === "echo") &&
+      {(phase === "listening" || phase === "verdict") &&
         chosen && (
           <div className="flex flex-col gap-4 sm:gap-5">
             {playbackError && (
@@ -391,27 +378,29 @@ export function Station4Factory({
             )}
 
             {phase === "verdict" && (
-              <div className="rise flex flex-wrap items-center justify-between gap-3 sm:gap-4">
-                <PlayButton
-                  onClick={() => void play()}
-                  playing={playing}
-                  tone="miko"
-                  label={t("common.listen")}
-                />
-                <BigButton onClick={() => setPhase("echo")} tone="echo">
-                  {t("station4.askEcho")}
-                </BigButton>
-              </div>
-            )}
-
-            {phase === "echo" && (
-              <EchoVerdict
-                lang={lang}
-                spectrogram={spectrogram}
-                clue={clue ?? null}
-                scam={"scam" in chosen && chosen.scam}
-                onDone={onDone}
-              />
+              <>
+                <PersonaBubble who="echo" mood="alert" tone="alert">
+                  {t("station4.lesson")}
+                </PersonaBubble>
+                {"scam" in chosen && chosen.scam && (
+                  <div className="rise rounded-[20px] bg-fake-500/10 p-4 ring-1 ring-fake-500/40 ring-inset sm:p-5">
+                    <p className="text-base font-bold text-fake-400 sm:text-lg">
+                      {t("station4.scamTip")}
+                    </p>
+                  </div>
+                )}
+                <div className="rise flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+                  <PlayButton
+                    onClick={() => void play()}
+                    playing={playing}
+                    tone="miko"
+                    label={t("common.listen")}
+                  />
+                  <BigButton onClick={onDone} tone="echo">
+                    {t("common.next")}
+                  </BigButton>
+                </div>
+              </>
             )}
           </div>
         )}
@@ -435,92 +424,5 @@ function PlayingBars() {
         />
       ))}
     </span>
-  );
-}
-
-/**
- * Echo's catch, beat by beat: the alarm, then the evidence, then — after the
- * visitor has felt the trick land — the one sentence the whole demo is for.
- */
-function EchoVerdict({
-  lang,
-  spectrogram,
-  clue,
-  scam,
-  onDone,
-}: {
-  lang: Lang;
-  spectrogram: string;
-  clue: ClueBox | null;
-  scam: boolean;
-  onDone: () => void;
-}) {
-  const t = useT(lang);
-  const beat = useBeat([600, 1600, 2400]);
-
-  useEffect(() => {
-    announce(t("station4.echoAlert"), "assertive");
-  }, [t]);
-
-  return (
-    <>
-      <PersonaBubble who="echo" mood="alert" tone="alert">
-        {t("station4.echoAlert")}
-      </PersonaBubble>
-
-      {beat >= 1 && (
-        <Spectrogram
-          image={spectrogram}
-          clue={clue}
-          showClue={Boolean(clue)}
-          scanning
-          className="h-36 w-full sm:h-44"
-          caption={t("station2.evidence")}
-          alt={t("station2.specAlt")}
-          missingLabel={t("audio.missingImage")}
-          clueDescription={clue ? t(clue.key) : t("station4.noClueDescription")}
-        />
-      )}
-
-      {beat >= 2 && (
-        <>
-          {/* Echo is theatre with a script, and the script says so. He is not
-              analysing anything: this clip arrived in the pack already labelled
-              as a fake, because we generated it. Saying that out loud costs the
-              character nothing and is the difference between a demo about
-              deepfakes and a demo that is one. */}
-          <p className="text-xs leading-relaxed text-ink-400 sm:text-sm">
-            {t("station4.echoDisclosure")}
-          </p>
-
-          {/* If they picked the scam sentence, Echo gives the one piece of advice
-              that actually protects a family. This is the whole reason that
-              sentence is in the demo. */}
-          {scam && (
-            <div className="rise rounded-[20px] bg-fake-500/10 p-4 ring-1 ring-fake-500/40 ring-inset sm:p-5">
-              <p className="text-base font-bold text-fake-400 sm:text-lg">
-                {t("station4.scamTip")}
-              </p>
-            </div>
-          )}
-
-          {/* The thesis of the entire demo, stated once, plainly, after the
-              visitor has already felt it. */}
-          <div className="rise rounded-[24px] bg-gradient-to-br from-echo-500/20 via-ink-800/40 to-miko-500/20 p-5 text-center ring-1 ring-white/10 ring-inset sm:p-6">
-            <p className="font-display text-xl leading-snug font-extrabold text-white sm:text-2xl md:text-[1.8rem]">
-              {t("station4.lesson")}
-            </p>
-          </div>
-        </>
-      )}
-
-      <div className="flex min-h-[4.75rem] justify-end">
-        {beat >= 3 && (
-          <BigButton onClick={onDone} tone="echo" className="rise">
-            {t("common.next")}
-          </BigButton>
-        )}
-      </div>
-    </>
   );
 }

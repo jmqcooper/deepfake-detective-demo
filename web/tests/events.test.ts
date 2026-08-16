@@ -103,8 +103,8 @@ test("unknown fields are refused rather than stored", async () => {
   expectRejected(result, 400);
 });
 
-test("a station outside 1..5 is rejected", async () => {
-  for (const station of [0, 6, 99, -1]) {
+test("a station outside 1..6 is rejected", async () => {
+  for (const station of [0, 7, 99, -1]) {
     const result = await handleEvent(
       { ...guessEvent("case-01", "real"), station },
       harness().deps,
@@ -175,7 +175,7 @@ test("the session score is derived from accepted guesses", async () => {
 
   const completion = expectOk(
     await handleEvent(
-      { sessionId: SESSION, station: 5, lang: "nl", type: "session_complete" },
+      { sessionId: SESSION, station: 6, lang: "nl", type: "session_complete" },
       deps,
     ),
   );
@@ -188,7 +188,7 @@ test("the session score is derived from accepted guesses", async () => {
 
 test("session_complete does not accept a score from the client", async () => {
   const result = await handleEvent(
-    { sessionId: SESSION, station: 5, lang: "nl", type: "session_complete", score: 5 },
+    { sessionId: SESSION, station: 6, lang: "nl", type: "session_complete", score: 5 },
     harness().deps,
   );
   expectRejected(result, 400);
@@ -200,7 +200,7 @@ test("the final scenario is scored on the server", async () => {
     await handleEvent(
       {
         sessionId: SESSION,
-        station: 5,
+        station: 6,
         lang: "nl",
         type: "final_scenario",
         choice: "callback",
@@ -220,7 +220,7 @@ test("the final scenario is scored on the server", async () => {
     await handleEvent(
       {
         sessionId: SESSION,
-        station: 5,
+        station: 6,
         lang: "nl",
         type: "final_scenario",
         choice: "reply",
@@ -235,7 +235,7 @@ test("an invented scenario answer is rejected", async () => {
   const result = await handleEvent(
     {
       sessionId: SESSION,
-      station: 5,
+      station: 6,
       lang: "nl",
       type: "final_scenario",
       choice: "whatever",
