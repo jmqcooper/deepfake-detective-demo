@@ -1,3 +1,5 @@
+import { voiceServiceHeaders } from "@/lib/voice-service";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -12,8 +14,9 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const response = await fetch(`${SERVICE_URL}/wake`, {
       method: "POST",
+      headers: voiceServiceHeaders(),
       cache: "no-store",
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]),
     });
     const body = await response.text();
     return new Response(body, {

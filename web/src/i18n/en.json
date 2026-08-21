@@ -252,6 +252,7 @@
     },
     "lesson": "Ten seconds was enough to create new words in your voice. A familiar voice is not proof of who is speaking.",
     "unavailable": "The local voice models could not start. Continue and ask the facilitator to check the local model service.",
+    "retryModels": "Retry the models",
     "error": "Cloning failed. Your recording was deleted. You can try again or continue."
   },
   "station6": {

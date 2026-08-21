@@ -18,6 +18,11 @@ web/data/
 __pycache__/
 *.py[cod]
 
+# Deployment secrets and local environment overrides.
+.env
+.env.*
+!.env.example
+
 # Local editor and coding-assistant metadata
 .vscode/
 .idea/

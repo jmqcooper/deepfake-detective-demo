@@ -122,12 +122,34 @@ voice environment is `/opt/nemo-demo/.venv-voice`, and the unprivileged service
 account is `nemo`. Adjust those three values in `ops/deepfake-voice.service` when
 the server uses different paths or an account supplied by FEIOG.
 
+Create one random internal token and give the same value to the Podman web
+container and the native service. This prevents anything that can reach port
+8765 from calling the model worker directly:
+
+```bash
+sudo install -d -m 0750 /etc/deepfake-detective
+VOICE_TOKEN=$(openssl rand -hex 32)
+printf 'VOICE_CLONE_TOKEN=%s\n' "$VOICE_TOKEN" \
+  | sudo tee /etc/deepfake-detective/voice.env >/dev/null
+unset VOICE_TOKEN
+sudo chmod 0600 /etc/deepfake-detective/voice.env
+```
+
+Copy the line shown by `sudo cat /etc/deepfake-detective/voice.env` into the
+deployment `.env`; do not commit either file. Token-free operation remains
+available for local development only. The supplied systemd unit fails closed
+when the token file is missing or empty.
+
 ```bash
 sudo install -m 0644 ops/deepfake-voice.service /etc/systemd/system/
 sudo install -m 0644 ops/deepfake-voice.socket /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now deepfake-voice.socket
-curl --fail -X POST http://127.0.0.1:8765/wake
+set -a
+. /etc/deepfake-detective/voice.env
+set +a
+curl --fail -H "Authorization: Bearer $VOICE_CLONE_TOKEN" \
+  -X POST http://127.0.0.1:8765/wake
 ```
 
 `VOICE_CLONE_DEVICE=auto` prefers NVIDIA CUDA, then Apple MPS, then CPU. On a
@@ -136,6 +158,11 @@ Change `VOICE_CLONE_IDLE_SECONDS` to tune the warm period. Keep
 `VOICE_CLONE_EXIT_ON_IDLE=1` for socket activation; a manually started service
 can leave it unset and will unload the models while keeping its small API process
 available.
+
+The service reports its selected device and last model-load duration through
+`/health`. It accepts only one clone job at a time so repeated public requests
+cannot create an unbounded inference queue; another request receives `429` and
+may be retried.
 
 ## Participant flow
 
