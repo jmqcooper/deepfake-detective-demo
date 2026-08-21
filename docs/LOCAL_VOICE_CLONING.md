@@ -2,7 +2,14 @@
 
 Station 5 uses a separate native service for Chatterbox Multilingual V3 and the
 DF Arena detector. Inference stays on the exhibit computer and the temporary
-reference recording is deleted after each request.
+reference recording is deleted after each request. The web app wakes this
+service during Station 4 and polls readiness before enabling Station 5.
+
+The service does not load models at process startup. A `POST /wake` request loads
+them from the local Hugging Face cache (downloading pinned weights on the first
+run). By default they are released after ten idle minutes. A systemd socket can
+also start the worker on the first wake request and let it exit after the idle
+timeout, returning all CPU RAM and GPU VRAM to the host.
 
 ## Supported hardware
 
@@ -47,7 +54,7 @@ the pinned Chatterbox version and the installed NVIDIA driver. Confirm that
 
 ## Start it for local development
 
-Start the model service in one terminal:
+Start the small model service in one terminal:
 
 ```bash
 source .venv-voice/bin/activate
@@ -59,10 +66,17 @@ On Windows PowerShell, activate it with
 Start `make dev` in a second terminal. Both processes use
 `http://127.0.0.1:8765` automatically.
 
-The first service start downloads the pinned model weights. Wait until
-<http://127.0.0.1:8765/health> reports `"ready": true`. Its `device` field shows
-`cuda`, `mps`, or `cpu`. Stop the service with `Ctrl+C`; activate the environment
-and run the command again next time.
+Wake it, then wait for readiness:
+
+```bash
+curl --fail -X POST http://127.0.0.1:8765/wake
+curl http://127.0.0.1:8765/health
+```
+
+The first wake downloads the pinned model weights. Wait until `/health` reports
+`"ready": true`. Its `device` field shows `cuda`, `mps`, or `cpu`. Stop the
+service with `Ctrl+C`; activate the environment and run the command again next
+time.
 
 ## Start it beside Docker
 
@@ -95,6 +109,33 @@ Binding to `0.0.0.0` can make port 8765 reachable from the local network. Keep
 that port blocked by the host firewall; only the local Docker web container
 needs it. Override `VOICE_CLONE_URL` in Compose if the service runs at another
 local address.
+
+## On-demand systemd worker on Linux
+
+The included socket unit keeps no Python or model process running while idle.
+The first internal connection to port 8765 starts the worker; after ten idle
+minutes the worker exits and systemd leaves only the lightweight listening
+socket behind.
+
+The example units assume the repository is installed at `/opt/nemo-demo`, the
+voice environment is `/opt/nemo-demo/.venv-voice`, and the unprivileged service
+account is `nemo`. Adjust those three values in `ops/deepfake-voice.service` when
+the server uses different paths or an account supplied by FEIOG.
+
+```bash
+sudo install -m 0644 ops/deepfake-voice.service /etc/systemd/system/
+sudo install -m 0644 ops/deepfake-voice.socket /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now deepfake-voice.socket
+curl --fail -X POST http://127.0.0.1:8765/wake
+```
+
+`VOICE_CLONE_DEVICE=auto` prefers NVIDIA CUDA, then Apple MPS, then CPU. On a
+Linux VM with a CUDA GPU passed through, no application change is required.
+Change `VOICE_CLONE_IDLE_SECONDS` to tune the warm period. Keep
+`VOICE_CLONE_EXIT_ON_IDLE=1` for socket activation; a manually started service
+can leave it unset and will unload the models while keeping its small API process
+available.
 
 ## Participant flow
 

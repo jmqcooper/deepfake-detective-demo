@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useReducer, useState } from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
 import {
   useEvents,
   useIdleReset,
@@ -89,6 +89,20 @@ export function DemoShell() {
   // A visitor who wanders off must never block the next one. Station 6 resets
   // sooner than the rest — a finished visitor is standing there reading.
   useIdleReset(idleTimeoutMs(flow), restart);
+
+  // Wake the expensive voice models one mission early. With systemd socket
+  // activation this also starts the worker process; a GPU can usually finish
+  // loading while the visitor completes the fake-voice factory.
+  useEffect(() => {
+    if (flow.station !== 3) return;
+    const controller = new AbortController();
+    void fetch("/api/voice-clone/wake", {
+      method: "POST",
+      cache: "no-store",
+      signal: controller.signal,
+    }).catch(() => undefined);
+    return () => controller.abort();
+  }, [flow.station]);
 
   if (manifest.status === "loading") {
     return <Centered>{t("common.loading")}</Centered>;

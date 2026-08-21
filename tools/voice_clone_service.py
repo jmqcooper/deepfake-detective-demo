@@ -1,36 +1,35 @@
 #!/usr/bin/env python3
-"""Private, local-only voice cloning service for Station 5.
+"""Private, on-demand voice cloning service for Station 5.
 
 The service accepts a short WAV recording, generates one fixed exhibit line and
-runs a separate anti-spoofing model on the result. Audio lives in memory except
-for a request-scoped reference file that is always deleted.
+runs a separate anti-spoofing model on the result. Models load only after a wake
+request and are released after an idle timeout. Audio lives in memory except for
+a request-scoped reference file that is always deleted.
 """
 
 from __future__ import annotations
 
 import io
-import inspect
+import gc
 import logging
 import os
+import signal
 import tempfile
 import threading
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
-import numpy as np
-import soundfile as sf
-import torch
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
-from huggingface_hub import snapshot_download
 from starlette.concurrency import run_in_threadpool
-from transformers import pipeline
 
-from chatterbox import mtl_tts as chatterbox_mtl
-from chatterbox.mtl_tts import ChatterboxMultilingualTTS
 try:
+    from tools.on_demand import OnDemandResource, ResourceNotReady
     from tools.voice_device import resolve_device
 except ModuleNotFoundError:  # Supports `python tools/voice_clone_service.py` too.
+    from on_demand import OnDemandResource, ResourceNotReady
     from voice_device import resolve_device
 
 CHATTERBOX_REPO = "ResembleAI/chatterbox"
@@ -49,26 +48,34 @@ GENERATION_PROFILES = {
     "nl": {"seed": 1701, "temperature": 0.65, "cfg_weight": 0.4},
     "en": {"seed": 3407, "temperature": 0.7, "cfg_weight": 0.5},
 }
-
-device = resolve_device(
-    os.getenv("VOICE_CLONE_DEVICE", "auto"),
-    cuda_available=torch.cuda.is_available(),
-    mps_available=torch.backends.mps.is_available(),
-)
-clone_model: ChatterboxMultilingualTTS | None = None
-detector = None
-load_error: str | None = None
-model_lock = threading.Lock()
 logger = logging.getLogger("voice-clone")
+idle_seconds = max(30, int(os.getenv("VOICE_CLONE_IDLE_SECONDS", "600")))
+exit_on_idle = os.getenv("VOICE_CLONE_EXIT_ON_IDLE", "0").lower() in {
+    "1",
+    "true",
+    "yes",
+}
+loaded_device: str | None = None
 
 
-def load_clone_model(checkpoint: Path) -> ChatterboxMultilingualTTS:
-    """Load V3 with both the released and current Chatterbox APIs.
+@dataclass
+class ModelBundle:
+    clone_model: Any
+    detector: Any
+    device: str
+    torch: Any
 
-    PyPI 0.1.7 hard-codes the V2 filename. Upstream added the ``t3_model``
-    argument without publishing a new package version, so the stable install
-    needs the equivalent loader for the V3 checkpoint.
-    """
+
+def load_clone_model(checkpoint: Path, device: str, torch: Any) -> Any:
+    """Load Chatterbox V3 with both the released and current package APIs."""
+    import inspect
+
+    from chatterbox import mtl_tts as chatterbox_mtl
+    from chatterbox.mtl_tts import ChatterboxMultilingualTTS
+
+    # PyPI 0.1.7 hard-codes the V2 filename. Upstream added the ``t3_model``
+    # argument without publishing a new package version, so the stable install
+    # needs the equivalent loader for the V3 checkpoint.
     parameters = inspect.signature(ChatterboxMultilingualTTS.from_local).parameters
     if "t3_model" in parameters:
         return ChatterboxMultilingualTTS.from_local(
@@ -115,18 +122,20 @@ def load_clone_model(checkpoint: Path) -> ChatterboxMultilingualTTS:
     )
 
 
-@asynccontextmanager
-async def lifespan(_: FastAPI):
-    threading.Thread(target=load_models, name="voice-model-loader", daemon=True).start()
-    yield
+def load_models() -> ModelBundle:
+    """Import the ML stack lazily, download/cache weights, and load one bundle."""
+    global loaded_device
 
+    import torch
+    from huggingface_hub import snapshot_download
+    from transformers import pipeline
 
-app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
-
-
-def load_models() -> None:
-    global clone_model, detector, load_error
     try:
+        device = resolve_device(
+            os.getenv("VOICE_CLONE_DEVICE", "auto"),
+            cuda_available=torch.cuda.is_available(),
+            mps_available=torch.backends.mps.is_available(),
+        )
         checkpoint = Path(
             snapshot_download(
                 repo_id=CHATTERBOX_REPO,
@@ -142,7 +151,7 @@ def load_models() -> None:
                 token=os.getenv("HF_TOKEN"),
             )
         )
-        clone_model = load_clone_model(checkpoint)
+        clone_model = load_clone_model(checkpoint, device, torch)
         detector = pipeline(
             "antispoofing",
             model=DETECTOR_MODEL,
@@ -150,25 +159,92 @@ def load_models() -> None:
             trust_remote_code=True,
             device=device,
         )
-    except Exception as exc:
-        load_error = type(exc).__name__
+        loaded_device = device
+        return ModelBundle(clone_model, detector, device, torch)
+    except Exception:
         logger.exception("Voice models failed to load")
+        raise
+
+
+def release_models(bundle: ModelBundle) -> None:
+    """Drop model references and return accelerator memory to the host."""
+    device = bundle.device
+    torch = bundle.torch
+    bundle.clone_model = None
+    bundle.detector = None
+    gc.collect()
+    if device == "cuda" and torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    elif device == "mps" and torch.backends.mps.is_available():
+        torch.mps.empty_cache()
+    logger.info("Released idle voice models from %s", device)
+
+
+models = OnDemandResource(
+    load_models,
+    release_models,
+    idle_seconds=idle_seconds,
+)
+stop_idle_monitor = threading.Event()
+
+
+def monitor_idle_models() -> None:
+    check_every = min(30.0, max(1.0, idle_seconds / 4))
+    while not stop_idle_monitor.wait(check_every):
+        released = models.release_if_idle()
+        if exit_on_idle and (released or models.empty_and_idle()):
+            # With systemd socket activation, exiting releases all CPU/GPU
+            # memory. The next /wake connection starts a fresh worker process.
+            os.kill(os.getpid(), signal.SIGTERM)
+            return
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    stop_idle_monitor.clear()
+    threading.Thread(
+        target=monitor_idle_models,
+        name="voice-model-idle-monitor",
+        daemon=True,
+    ).start()
+    if os.getenv("VOICE_CLONE_EAGER", "0").lower() in {"1", "true", "yes"}:
+        models.wake()
+    yield
+    stop_idle_monitor.set()
+    models.release_now()
+
+
+app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
 
 
 @app.get("/health")
 def health() -> dict[str, object]:
+    status = models.status()
     return {
-        "ready": clone_model is not None and detector is not None,
-        "cloning": clone_model is not None,
-        "detector": detector is not None,
-        "device": device,
-        "loading": (clone_model is None or detector is None) and load_error is None,
-        "error": load_error,
+        "ready": status.ready,
+        "cloning": status.ready,
+        "detector": status.ready,
+        "device": loaded_device,
+        "loading": status.loading,
+        "error": status.error,
+        "onDemand": True,
+        "idleSeconds": idle_seconds,
     }
 
 
-def detector_guess(waveform: np.ndarray) -> tuple[str, str]:
-    assert detector is not None
+@app.post("/wake", status_code=202)
+def wake() -> dict[str, object]:
+    status = models.wake()
+    return {
+        "ready": status.ready,
+        "loading": status.loading,
+        "error": status.error,
+    }
+
+
+def detector_guess(bundle: ModelBundle, waveform: Any) -> tuple[str, str]:
+    import numpy as np
+
     peak = max(float(np.max(np.abs(waveform))), 0.01)
     rng = np.random.default_rng(7)
     variants = [
@@ -176,7 +252,7 @@ def detector_guess(waveform: np.ndarray) -> tuple[str, str]:
         np.clip(waveform * 0.92, -1.0, 1.0),
         np.clip(waveform + rng.normal(0.0, peak / 180.0, waveform.shape), -1.0, 1.0),
     ]
-    labels = [str(detector(audio)["label"]).lower() for audio in variants]
+    labels = [str(bundle.detector(audio)["label"]).lower() for audio in variants]
     fake_votes = sum(label == "spoof" for label in labels)
     label = "fake" if fake_votes >= 2 else "real"
     agreement = max(fake_votes, len(labels) - fake_votes)
@@ -184,11 +260,11 @@ def detector_guess(waveform: np.ndarray) -> tuple[str, str]:
     return label, confidence
 
 
-def generate_clone(temp_path: Path, lang: str) -> tuple[np.ndarray, str, str]:
-    assert clone_model is not None
+def generate_clone(temp_path: Path, lang: str) -> tuple[Any, str, str, int]:
     profile = GENERATION_PROFILES[lang]
-    with model_lock, torch.inference_mode():
-        torch.manual_seed(profile["seed"])
+    with models.use() as bundle, bundle.torch.inference_mode():
+        clone_model = bundle.clone_model
+        bundle.torch.manual_seed(profile["seed"])
         generated = clone_model.generate(
             OUTPUT_TEXT[lang],
             language_id=lang,
@@ -198,13 +274,14 @@ def generate_clone(temp_path: Path, lang: str) -> tuple[np.ndarray, str, str]:
             cfg_weight=profile["cfg_weight"],
         )
         waveform = generated.squeeze().detach().float().cpu().numpy()
-        label, confidence = detector_guess(waveform)
-    return waveform, label, confidence
+        label, confidence = detector_guess(bundle, waveform)
+        return waveform, label, confidence, clone_model.sr
 
 
 @app.post("/clone")
 async def clone(audio: UploadFile = File(...), lang: str = Form(...)) -> Response:
-    if clone_model is None or detector is None:
+    if not models.status().ready:
+        models.wake()
         raise HTTPException(status_code=503, detail="models_not_ready")
     if lang not in OUTPUT_TEXT:
         raise HTTPException(status_code=400, detail="unsupported_language")
@@ -214,6 +291,8 @@ async def clone(audio: UploadFile = File(...), lang: str = Form(...)) -> Respons
         raise HTTPException(status_code=413, detail="recording_too_large")
 
     try:
+        import soundfile as sf
+
         source, sample_rate = sf.read(io.BytesIO(payload), dtype="float32", always_2d=False)
     except Exception as exc:
         raise HTTPException(status_code=400, detail="invalid_wav") from exc
@@ -228,11 +307,11 @@ async def clone(audio: UploadFile = File(...), lang: str = Form(...)) -> Respons
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as handle:
             temp_path = Path(handle.name)
         sf.write(temp_path, source, sample_rate, subtype="PCM_16")
-        waveform, label, confidence = await run_in_threadpool(
+        waveform, label, confidence, sample_rate = await run_in_threadpool(
             generate_clone, temp_path, lang
         )
         output = io.BytesIO()
-        sf.write(output, waveform, clone_model.sr, format="WAV", subtype="PCM_16")
+        sf.write(output, waveform, sample_rate, format="WAV", subtype="PCM_16")
         return Response(
             content=output.getvalue(),
             media_type="audio/wav",
@@ -242,6 +321,8 @@ async def clone(audio: UploadFile = File(...), lang: str = Form(...)) -> Respons
                 "X-Echo-Confidence": confidence,
             },
         )
+    except ResourceNotReady as exc:
+        raise HTTPException(status_code=503, detail="models_not_ready") from exc
     finally:
         if temp_path is not None:
             temp_path.unlink(missing_ok=True)
@@ -250,8 +331,11 @@ async def clone(audio: UploadFile = File(...), lang: str = Form(...)) -> Respons
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(
-        app,
-        host=os.getenv("VOICE_CLONE_HOST", "127.0.0.1"),
-        port=int(os.getenv("VOICE_CLONE_PORT", "8765")),
-    )
+    if socket_fd := os.getenv("VOICE_CLONE_SOCKET_FD"):
+        uvicorn.run(app, fd=int(socket_fd))
+    else:
+        uvicorn.run(
+            app,
+            host=os.getenv("VOICE_CLONE_HOST", "127.0.0.1"),
+            port=int(os.getenv("VOICE_CLONE_PORT", "8765")),
+        )

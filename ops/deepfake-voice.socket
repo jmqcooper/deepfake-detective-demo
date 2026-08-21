@@ -1,0 +1,12 @@
+[Unit]
+Description=On-demand Deepfake Detective voice-model socket
+
+[Socket]
+# The Podman web container reaches this through its host-gateway address. Keep
+# port 8765 blocked at the host/network firewall; it is not a public API.
+ListenStream=0.0.0.0:8765
+NoDelay=true
+Service=deepfake-voice.service
+
+[Install]
+WantedBy=sockets.target

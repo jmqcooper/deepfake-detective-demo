@@ -33,8 +33,8 @@ starts the Next.js app at <http://localhost:3000>. The fixture contains tones an
 silence; exhibition-quality media is generated separately. See
 [tools/README.md](tools/README.md) for the media pipeline.
 
-Live voice cloning is optional during development. Start its local model service
-separately by following
+Live voice cloning is optional during development. Start its local, on-demand
+model service separately by following
 [docs/LOCAL_VOICE_CLONING.md](docs/LOCAL_VOICE_CLONING.md); otherwise Station 5
 shows an unavailable message and can be skipped.
 
@@ -69,8 +69,10 @@ inside Docker, because doing so would hide Apple MPS and complicate host GPU
 support. The web demo still works without them; to enable live cloning, run the
 separate local service documented in
 [docs/LOCAL_VOICE_CLONING.md](docs/LOCAL_VOICE_CLONING.md). That guide includes
-one-time setup, virtual-environment activation, normal restart, and health-check
-commands for macOS/Linux and Windows.
+one-time setup, on-demand systemd socket activation, normal restart, and
+health-check commands for macOS/Linux and Windows. The web app wakes the models
+one mission before they are needed. After ten idle minutes, the worker releases
+the models or exits completely when socket activation is enabled.
 
 The resulting local layout is: browser → Docker web app → native voice service.
 Docker reaches the service through `host.docker.internal`; no hosted inference

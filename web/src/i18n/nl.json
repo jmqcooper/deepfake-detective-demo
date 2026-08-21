@@ -251,7 +251,7 @@
       "high": "hoog"
     },
     "lesson": "Tien seconden was genoeg om nieuwe woorden met jouw stem te maken. Een bekende stem is dus geen bewijs van wie er spreekt.",
-    "unavailable": "De lokale stemmodellen zijn nog niet klaar. Ga verder en laat de begeleider de lokale modelservice controleren.",
+    "unavailable": "De lokale stemmodellen konden niet starten. Ga verder en laat de begeleider de lokale modelservice controleren.",
     "error": "Het klonen lukte niet. Je opname is gewist. Je kunt opnieuw proberen of doorgaan."
   },
   "station6": {

@@ -8,6 +8,7 @@ import { encodePcm16Wav, joinSamples } from "@/lib/wav";
 
 type Phase = "ready" | "recording" | "review" | "cloning" | "result" | "error";
 type ModelGuess = { label: "real" | "fake"; confidence: "low" | "medium" | "high" };
+type ModelHealth = { ready?: boolean; loading?: boolean; error?: string | null };
 
 const RECORD_SECONDS = 10;
 
@@ -30,11 +31,50 @@ export function Station5VoiceClone({ lang, onDone }: { lang: Lang; onDone: () =>
 
   useEffect(() => {
     const controller = new AbortController();
-    void fetch("/api/voice-clone/health", { cache: "no-store", signal: controller.signal })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((body: { ready?: boolean } | null) => setAvailable(body?.ready === true))
-      .catch(() => setAvailable(false));
-    return () => controller.abort();
+    let timer: number | undefined;
+
+    const check = async (): Promise<void> => {
+      try {
+        const response = await fetch("/api/voice-clone/health", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const body = (await response.json().catch(() => null)) as ModelHealth | null;
+        if (body?.ready === true) {
+          setAvailable(true);
+        } else if (body?.loading === true && !body.error) {
+          setAvailable(null);
+          timer = window.setTimeout(() => void check(), 2_000);
+        } else {
+          setAvailable(false);
+        }
+      } catch {
+        if (!controller.signal.aborted) setAvailable(false);
+      }
+    };
+
+    const wakeAndPoll = async (): Promise<void> => {
+      try {
+        const response = await fetch("/api/voice-clone/wake", {
+          method: "POST",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          setAvailable(false);
+          return;
+        }
+        await check();
+      } catch {
+        if (!controller.signal.aborted) setAvailable(false);
+      }
+    };
+
+    void wakeAndPoll();
+    return () => {
+      controller.abort();
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
   }, []);
 
   useEffect(() => () => {

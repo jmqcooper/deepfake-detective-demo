@@ -1,0 +1,22 @@
+[Unit]
+Description=On-demand Deepfake Detective voice-model worker
+After=network-online.target
+Wants=network-online.target
+Requires=deepfake-voice.socket
+
+[Service]
+Type=simple
+User=nemo
+WorkingDirectory=/opt/nemo-demo
+Environment=VOICE_CLONE_SOCKET_FD=3
+Environment=VOICE_CLONE_DEVICE=auto
+Environment=VOICE_CLONE_IDLE_SECONDS=600
+Environment=VOICE_CLONE_EXIT_ON_IDLE=1
+ExecStart=/opt/nemo-demo/.venv-voice/bin/python -m tools.voice_clone_service
+Restart=on-failure
+RestartSec=3
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
