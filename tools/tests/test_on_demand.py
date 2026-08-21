@@ -48,7 +48,8 @@ class OnDemandResourceTests(unittest.TestCase):
         self.assertTrue(loaded.wait(1))
         self.assertTrue(wait_for(manager, lambda status: status.ready).ready)
 
-        manager.wake()
+        clock.now = 5
+        manager.wake()  # A redundant wake must not keep a ready model resident.
         clock.now = 9
         self.assertFalse(manager.release_if_idle())
         clock.now = 10

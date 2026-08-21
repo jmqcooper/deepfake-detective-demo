@@ -16,19 +16,25 @@ import os
 import signal
 import tempfile
 import threading
+import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 
 try:
+    from tools.internal_auth import (
+        bearer_token_matches,
+        validate_token_configuration,
+    )
     from tools.on_demand import OnDemandResource, ResourceNotReady
     from tools.voice_device import resolve_device
 except ModuleNotFoundError:  # Supports `python tools/voice_clone_service.py` too.
+    from internal_auth import bearer_token_matches, validate_token_configuration
     from on_demand import OnDemandResource, ResourceNotReady
     from voice_device import resolve_device
 
@@ -48,7 +54,7 @@ GENERATION_PROFILES = {
     "nl": {"seed": 1701, "temperature": 0.65, "cfg_weight": 0.4},
     "en": {"seed": 3407, "temperature": 0.7, "cfg_weight": 0.5},
 }
-logger = logging.getLogger("voice-clone")
+logger = logging.getLogger("uvicorn.error")
 idle_seconds = max(30, int(os.getenv("VOICE_CLONE_IDLE_SECONDS", "600")))
 exit_on_idle = os.getenv("VOICE_CLONE_EXIT_ON_IDLE", "0").lower() in {
     "1",
@@ -56,6 +62,13 @@ exit_on_idle = os.getenv("VOICE_CLONE_EXIT_ON_IDLE", "0").lower() in {
     "yes",
 }
 loaded_device: str | None = None
+last_load_seconds: float | None = None
+internal_token = os.getenv("VOICE_CLONE_TOKEN")
+validate_token_configuration(
+    internal_token,
+    os.getenv("VOICE_CLONE_REQUIRE_TOKEN", "0").lower() in {"1", "true", "yes"},
+)
+clone_slot = threading.BoundedSemaphore(1)
 
 
 @dataclass
@@ -124,8 +137,10 @@ def load_clone_model(checkpoint: Path, device: str, torch: Any) -> Any:
 
 def load_models() -> ModelBundle:
     """Import the ML stack lazily, download/cache weights, and load one bundle."""
-    global loaded_device
+    global last_load_seconds, loaded_device
 
+    started = time.monotonic()
+    logger.info("Loading pinned voice-cloning and detection models")
     import torch
     from huggingface_hub import snapshot_download
     from transformers import pipeline
@@ -160,8 +175,15 @@ def load_models() -> ModelBundle:
             device=device,
         )
         loaded_device = device
+        last_load_seconds = round(time.monotonic() - started, 2)
+        logger.info(
+            "Voice models ready on %s after %.2f seconds",
+            device,
+            last_load_seconds,
+        )
         return ModelBundle(clone_model, detector, device, torch)
     except Exception:
+        last_load_seconds = round(time.monotonic() - started, 2)
         logger.exception("Voice models failed to load")
         raise
 
@@ -217,8 +239,18 @@ async def lifespan(_: FastAPI):
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
 
 
+def require_internal_auth(request: Request) -> None:
+    if not bearer_token_matches(request.headers.get("authorization"), internal_token):
+        raise HTTPException(
+            status_code=401,
+            detail="unauthorized",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 @app.get("/health")
-def health() -> dict[str, object]:
+def health(request: Request) -> dict[str, object]:
+    require_internal_auth(request)
     status = models.status()
     return {
         "ready": status.ready,
@@ -229,11 +261,13 @@ def health() -> dict[str, object]:
         "error": status.error,
         "onDemand": True,
         "idleSeconds": idle_seconds,
+        "loadSeconds": last_load_seconds,
     }
 
 
 @app.post("/wake", status_code=202)
-def wake() -> dict[str, object]:
+def wake(request: Request) -> dict[str, object]:
+    require_internal_auth(request)
     status = models.wake()
     return {
         "ready": status.ready,
@@ -279,7 +313,12 @@ def generate_clone(temp_path: Path, lang: str) -> tuple[Any, str, str, int]:
 
 
 @app.post("/clone")
-async def clone(audio: UploadFile = File(...), lang: str = Form(...)) -> Response:
+async def clone(
+    request: Request,
+    audio: UploadFile = File(...),
+    lang: str = Form(...),
+) -> Response:
+    require_internal_auth(request)
     if not models.status().ready:
         models.wake()
         raise HTTPException(status_code=503, detail="models_not_ready")
@@ -303,6 +342,12 @@ async def clone(audio: UploadFile = File(...), lang: str = Form(...)) -> Respons
         raise HTTPException(status_code=400, detail="recording_length")
 
     temp_path: Path | None = None
+    if not clone_slot.acquire(blocking=False):
+        raise HTTPException(
+            status_code=429,
+            detail="clone_busy",
+            headers={"Retry-After": "10"},
+        )
     try:
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as handle:
             temp_path = Path(handle.name)
@@ -326,6 +371,7 @@ async def clone(audio: UploadFile = File(...), lang: str = Form(...)) -> Respons
     finally:
         if temp_path is not None:
             temp_path.unlink(missing_ok=True)
+        clone_slot.release()
 
 
 if __name__ == "__main__":

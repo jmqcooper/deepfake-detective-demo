@@ -12,11 +12,24 @@ Environment=VOICE_CLONE_SOCKET_FD=3
 Environment=VOICE_CLONE_DEVICE=auto
 Environment=VOICE_CLONE_IDLE_SECONDS=600
 Environment=VOICE_CLONE_EXIT_ON_IDLE=1
+Environment=VOICE_CLONE_REQUIRE_TOKEN=1
+Environment=HF_HOME=/var/cache/deepfake-voice/huggingface
+Environment=PYTHONPYCACHEPREFIX=/var/cache/deepfake-voice/pycache
+EnvironmentFile=-/etc/deepfake-detective/voice.env
 ExecStart=/opt/nemo-demo/.venv-voice/bin/python -m tools.voice_clone_service
 Restart=on-failure
 RestartSec=3
+CacheDirectory=deepfake-voice
 PrivateTmp=true
 NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0077
 
 [Install]
 WantedBy=multi-user.target

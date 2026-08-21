@@ -7,7 +7,7 @@ volume on the machine.
 
 ## Before opening
 
-1. Enable the on-demand socket with `systemctl enable --now deepfake-voice.socket`, call `curl --fail -X POST http://127.0.0.1:8765/wake`, and wait for `/health` to report `"ready":true`.
+1. Enable the on-demand socket with `systemctl enable --now deepfake-voice.socket`, call the web proxy with `curl --fail -X POST http://127.0.0.1:3000/api/voice-clone/wake`, and wait for `/api/voice-clone/health` to report `"ready":true`.
 2. Start the app with `docker compose up -d --build`.
 3. Wait for `docker compose ps` to report the web service as healthy, then check `curl --fail http://127.0.0.1:3000/api/health`.
 4. Open the sound check and confirm both speakers are audible. Record and clone one test voice. Confirm microphone permission, playback and Echo's guess.

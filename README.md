@@ -72,7 +72,9 @@ separate local service documented in
 one-time setup, on-demand systemd socket activation, normal restart, and
 health-check commands for macOS/Linux and Windows. The web app wakes the models
 one mission before they are needed. After ten idle minutes, the worker releases
-the models or exits completely when socket activation is enabled.
+the models or exits completely when socket activation is enabled. Server
+deployments use a shared internal bearer token between the web container and
+the worker, while local development remains token-free.
 
 The resulting local layout is: browser → Docker web app → native voice service.
 Docker reaches the service through `host.docker.internal`; no hosted inference

@@ -1,3 +1,5 @@
+import { voiceServiceHeaders } from "@/lib/voice-service";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -31,9 +33,25 @@ export async function POST(request: Request): Promise<Response> {
     form.set("lang", lang);
     const upstream = await fetch(`${SERVICE_URL}/clone`, {
       method: "POST",
+      headers: voiceServiceHeaders(),
       body: form,
-      signal: AbortSignal.timeout(CLONE_TIMEOUT_MS),
+      signal: AbortSignal.any([
+        request.signal,
+        AbortSignal.timeout(CLONE_TIMEOUT_MS),
+      ]),
     });
+    if (upstream.status === 429) {
+      return Response.json(
+        { error: "clone_busy" },
+        {
+          status: 429,
+          headers: {
+            "Cache-Control": "no-store",
+            "Retry-After": upstream.headers.get("retry-after") ?? "10",
+          },
+        },
+      );
+    }
     if (!upstream.ok) {
       return Response.json({ error: "clone_unavailable" }, { status: 503 });
     }

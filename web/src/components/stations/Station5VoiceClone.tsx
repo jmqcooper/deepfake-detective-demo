@@ -17,17 +17,31 @@ export function Station5VoiceClone({ lang, onDone }: { lang: Lang; onDone: () =>
   const [phase, setPhase] = useState<Phase>("ready");
   const [seconds, setSeconds] = useState(RECORD_SECONDS);
   const [available, setAvailable] = useState<boolean | null>(null);
+  const [modelCheckAttempt, setModelCheckAttempt] = useState(0);
   const [referenceUrl, setReferenceUrl] = useState<string | null>(null);
   const [cloneUrl, setCloneUrl] = useState<string | null>(null);
   const [guess, setGuess] = useState<ModelGuess | null>(null);
   const [playing, setPlaying] = useState<"reference" | "clone" | null>(null);
   const recordingBlob = useRef<Blob | null>(null);
-  const stopRecording = useRef<(() => void) | null>(null);
+  const stopRecording = useRef<((keepRecording: boolean) => void) | null>(null);
+  const cloneRequest = useRef<AbortController | null>(null);
+  const objectUrls = useRef(new Set<string>());
+
+  const createObjectUrl = useCallback((blob: Blob): string => {
+    const url = URL.createObjectURL(blob);
+    objectUrls.current.add(url);
+    return url;
+  }, []);
+
+  const releaseObjectUrl = useCallback((url: string): void => {
+    URL.revokeObjectURL(url);
+    objectUrls.current.delete(url);
+  }, []);
 
   const clearUrls = useCallback(() => {
-    if (referenceUrl) URL.revokeObjectURL(referenceUrl);
-    if (cloneUrl) URL.revokeObjectURL(cloneUrl);
-  }, [cloneUrl, referenceUrl]);
+    for (const url of objectUrls.current) URL.revokeObjectURL(url);
+    objectUrls.current.clear();
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -75,10 +89,12 @@ export function Station5VoiceClone({ lang, onDone }: { lang: Lang; onDone: () =>
       controller.abort();
       if (timer !== undefined) window.clearTimeout(timer);
     };
-  }, []);
+  }, [modelCheckAttempt]);
 
   useEffect(() => () => {
-    stopRecording.current?.();
+    stopRecording.current?.(false);
+    cloneRequest.current?.abort();
+    recordingBlob.current = null;
     clearUrls();
   }, [clearUrls]);
 
@@ -93,6 +109,7 @@ export function Station5VoiceClone({ lang, onDone }: { lang: Lang; onDone: () =>
   const start = useCallback(async () => {
     try {
       clearUrls();
+      recordingBlob.current = null;
       setReferenceUrl(null);
       setCloneUrl(null);
       setGuess(null);
@@ -120,7 +137,7 @@ export function Station5VoiceClone({ lang, onDone }: { lang: Lang; onDone: () =>
       silence.connect(context.destination);
 
       let stopped = false;
-      const finish = () => {
+      const finish = (keepRecording: boolean) => {
         if (stopped) return;
         stopped = true;
         processor.disconnect();
@@ -128,22 +145,26 @@ export function Station5VoiceClone({ lang, onDone }: { lang: Lang; onDone: () =>
         silence.disconnect();
         stream.getTracks().forEach((track) => track.stop());
         void context.close();
-        const blob = encodePcm16Wav(joinSamples(chunks), recordingSampleRate);
-        recordingBlob.current = blob;
-        const url = URL.createObjectURL(blob);
-        setReferenceUrl(url);
-        setPhase("review");
         stopRecording.current = null;
+        if (keepRecording) {
+          const blob = encodePcm16Wav(joinSamples(chunks), recordingSampleRate);
+          recordingBlob.current = blob;
+          setReferenceUrl(createObjectUrl(blob));
+          setPhase("review");
+        } else {
+          chunks.length = 0;
+          recordingBlob.current = null;
+        }
       };
       stopRecording.current = finish;
       setSeconds(RECORD_SECONDS);
       setPhase("recording");
       announce(t("station5.recording"));
-      window.setTimeout(finish, RECORD_SECONDS * 1000);
+      window.setTimeout(() => finish(true), RECORD_SECONDS * 1000);
     } catch {
       setPhase("error");
     }
-  }, [clearUrls, t]);
+  }, [clearUrls, createObjectUrl, t]);
 
   useEffect(() => {
     if (phase !== "recording") return;
@@ -154,15 +175,21 @@ export function Station5VoiceClone({ lang, onDone }: { lang: Lang; onDone: () =>
   const clone = useCallback(async () => {
     const audio = recordingBlob.current;
     if (!audio) return;
+    const controller = new AbortController();
+    cloneRequest.current = controller;
     setPhase("cloning");
     try {
       const form = new FormData();
       form.set("audio", audio, "participant.wav");
       form.set("lang", lang);
-      const response = await fetch("/api/voice-clone", { method: "POST", body: form });
+      const response = await fetch("/api/voice-clone", {
+        method: "POST",
+        body: form,
+        signal: controller.signal,
+      });
       if (!response.ok) throw new Error("clone failed");
       const generated = await response.blob();
-      const nextUrl = URL.createObjectURL(generated);
+      const nextUrl = createObjectUrl(generated);
       setCloneUrl(nextUrl);
       const label = response.headers.get("x-echo-label");
       const confidence = response.headers.get("x-echo-confidence");
@@ -175,16 +202,34 @@ export function Station5VoiceClone({ lang, onDone }: { lang: Lang; onDone: () =>
       setPhase("result");
       void playUrl(nextUrl, "clone");
     } catch {
-      setPhase("error");
+      if (!controller.signal.aborted) setPhase("error");
+    } finally {
+      if (cloneRequest.current === controller) cloneRequest.current = null;
+      recordingBlob.current = null;
+      setReferenceUrl((current) => {
+        if (current) releaseObjectUrl(current);
+        return null;
+      });
     }
-  }, [lang, playUrl]);
+  }, [createObjectUrl, lang, playUrl, releaseObjectUrl]);
 
   return (
     <StationCard>
       {available === false && phase === "ready" ? (
         <div className="flex flex-col items-center gap-5 py-6 text-center">
           <PersonaBubble who="echo">{t("station5.unavailable")}</PersonaBubble>
-          <BigButton onClick={onDone} tone="echo">{t("common.next")}</BigButton>
+          <div className="flex flex-wrap justify-center gap-3">
+            <BigButton
+              onClick={() => {
+                setAvailable(null);
+                setModelCheckAttempt((attempt) => attempt + 1);
+              }}
+              tone="neutral"
+            >
+              {t("station5.retryModels")}
+            </BigButton>
+            <BigButton onClick={onDone} tone="echo">{t("common.next")}</BigButton>
+          </div>
         </div>
       ) : phase === "ready" ? (
         <div className="flex flex-col items-center gap-5 py-4 text-center">

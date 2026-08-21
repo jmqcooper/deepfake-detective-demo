@@ -56,10 +56,14 @@ class OnDemandResource(Generic[Resource]):
             return self._status_locked()
 
     def wake(self) -> ResourceStatus:
-        """Refresh the idle deadline and begin loading when necessary."""
+        """Begin loading when necessary without extending a ready resource."""
         with self._state_lock:
+            # A public wake endpoint must not become a keep-warm endpoint. Once
+            # ready, only actual resource use refreshes the idle deadline.
+            if self._resource is not None:
+                return self._status_locked()
             self._last_activity = self._monotonic()
-            if self._resource is not None or self._loading:
+            if self._loading:
                 return self._status_locked()
             self._loading = True
             self._error = None
