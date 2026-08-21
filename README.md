@@ -11,8 +11,8 @@ locally on the host machine.
 
 ## Platform support
 
-- Docker: macOS, Linux, and Windows with Docker Desktop or Docker Engine and
-  Docker Compose v2.
+- Containers: Docker Compose v2 on macOS, Linux, or Windows, and Podman with a
+  Compose provider on Linux.
 - Native development: macOS, Linux, or Windows through WSL2.
 - Live voice cloning: Apple Silicon through MPS, NVIDIA GPUs through CUDA on
   Linux or Windows, or CPU as a slower fallback.
@@ -47,7 +47,7 @@ make check
 This verifies the runtime and script syntax, runs the Python and web tests, lint,
 typecheck, production build, sample-pack validation, and API end-to-end tests.
 
-## Docker Compose
+## Docker or Podman Compose
 
 From a fresh clone, this starts the web demo:
 
@@ -55,6 +55,12 @@ From a fresh clone, this starts the web demo:
 git clone https://github.com/jmqcooper/deepfake-detective-demo.git
 cd deepfake-detective-demo
 docker compose up -d --build
+```
+
+On a Podman host, use the same Compose file:
+
+```bash
+podman compose up -d --build
 ```
 
 Open <http://localhost:3000>. The container includes a synthetic audio fixture
@@ -76,9 +82,9 @@ the models or exits completely when socket activation is enabled. Server
 deployments use a shared internal bearer token between the web container and
 the worker, while local development remains token-free.
 
-The resulting local layout is: browser → Docker web app → native voice service.
-Docker reaches the service through `host.docker.internal`; no hosted inference
-service is involved.
+The resulting local layout is: browser → Podman/Docker web app → native voice
+service. The container reaches the service through `host.docker.internal`; no
+hosted inference service is involved.
 
 ## Project layout
 
