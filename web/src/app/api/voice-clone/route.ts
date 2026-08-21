@@ -1,4 +1,5 @@
 import { voiceServiceHeaders } from "@/lib/voice-service";
+import { isCrossOriginRequest } from "@/lib/request-origin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,8 +10,7 @@ const MAX_BYTES = 4 * 1024 * 1024;
 const CLONE_TIMEOUT_MS = 5 * 60 * 1_000;
 
 export async function POST(request: Request): Promise<Response> {
-  const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) {
+  if (isCrossOriginRequest(request)) {
     return Response.json({ error: "cross_origin_request" }, { status: 403 });
   }
 

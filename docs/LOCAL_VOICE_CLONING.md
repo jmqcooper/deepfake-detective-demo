@@ -78,10 +78,10 @@ The first wake downloads the pinned model weights. Wait until `/health` reports
 service with `Ctrl+C`; activate the environment and run the command again next
 time.
 
-## Start it beside Docker
+## Start it beside Docker or Podman
 
-Docker runs only the web app. The voice service runs natively beside it so it can
-use the host GPU. In terminal 1 on macOS or Linux:
+The container runtime runs only the web app. The voice service runs natively
+beside it so it can use the host GPU. In terminal 1 on macOS or Linux:
 
 ```bash
 source .venv-voice/bin/activate
@@ -102,8 +102,16 @@ Then, in terminal 2:
 docker compose up -d --build
 ```
 
-Open <http://localhost:3000>. The Docker container connects to the native service
-through `host.docker.internal`; no extra Compose service is required.
+Or on the FEIOG Linux host:
+
+```bash
+podman compose up -d --build
+```
+
+Open <http://localhost:3000>. The container connects to the native service
+through `host.docker.internal`; no extra Compose service is required. The
+Compose file declares the host-gateway mapping understood by both supported
+runtimes.
 
 Binding to `0.0.0.0` can make port 8765 reachable from the local network. Keep
 that port blocked by the host firewall; only the local Docker web container
@@ -163,6 +171,26 @@ The service reports its selected device and last model-load duration through
 `/health`. It accepts only one clone job at a time so repeated public requests
 cannot create an unbounded inference queue; another request receives `429` and
 may be retried.
+
+After starting the web container, run the supplied end-to-end deployment check.
+It verifies the public app health, container-to-host connectivity, shared-token
+authentication, and a complete model load without exposing the token:
+
+```bash
+ops/check-voice-deployment.sh
+```
+
+To include real cloning, provide a 3–12 second WAV recording. The generated test
+file is deleted automatically:
+
+```bash
+VOICE_SAMPLE_WAV=/path/to/test-recording.wav ops/check-voice-deployment.sh
+```
+
+After the configured idle period, `systemctl status deepfake-voice.service`
+should show an inactive worker while `deepfake-voice.socket` remains active.
+The next check or visitor wake request starts it again. The `device` field in the
+successful check output confirms whether the VM selected `cuda` or `cpu`.
 
 ## Participant flow
 
