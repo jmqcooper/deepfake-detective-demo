@@ -6,7 +6,9 @@ services:
       args:
         FORCE_SYNTHETIC_SAMPLES: ${FORCE_SYNTHETIC_SAMPLES:-0}
     ports:
-      - "3000:3000"
+      # Nginx terminates TLS on server deployments. Keep the application port
+      # private to the host so it cannot bypass the reverse proxy.
+      - "127.0.0.1:3000:3000"
     environment:
       DATABASE_PATH: ${DATABASE_PATH:-/app/data/stats.db}
       STATS_DRIVER: ${STATS_DRIVER:-sqlite}
