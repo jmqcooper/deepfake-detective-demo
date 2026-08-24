@@ -42,8 +42,10 @@ thin and the contracts are not.
 
 ## Rules that are easy to miss
 
-- **`web/public/samples/` is generated and gitignored.** Never commit audio, images,
-  or `manifest.json`. Regenerate them locally instead.
+- **`web/public/samples/` contains the bundled curated release pack.** Do not
+  replace its audio, images, or `manifest.json` as an incidental build result.
+  A deliberate pack update must pass `make release-check`, preserve provenance
+  and licensing, and commit only assets referenced by the new manifest.
 - **All copy is a key.** No hardcoded strings in components; add every string to both
   `nl.json` and `en.json`. Dutch is the default.
 - **The manifest is the contract, and there is only one copy of it.**

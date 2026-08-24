@@ -31,8 +31,8 @@ export type FlowAction =
   | { type: "start" }
   | { type: "soundCheckDone" }
   | { type: "beginStation" }
-  | { type: "advance" }
-  | { type: "skip" }
+  | { type: "advance"; voiceCloningAvailable?: boolean }
+  | { type: "skip"; voiceCloningAvailable?: boolean }
   | { type: "restart" };
 
 /** Stations that open with a mission briefing. Station 6 is the outro. */
@@ -69,6 +69,12 @@ export function flowReducer(state: FlowState, action: FlowAction): FlowState {
       if (state.phase === "attract") return state;
       if (state.phase === "soundCheck") return enter(0);
       if (state.station >= STATION_COUNT - 1) return state;
+      // Station 5 is an optional native add-on. When its port is not live,
+      // leave Station 4 directly for the safety finale instead of sending a
+      // visitor into a dead-end "service unavailable" mission.
+      if (state.station === 3 && action.voiceCloningAvailable === false) {
+        return enter(5);
+      }
       return enter(nextStation(state.station));
     case "restart":
       return initialFlow();
@@ -95,6 +101,20 @@ export function idleTimeoutMs(state: FlowState): number {
 /** Human-readable station number (1..6) for telemetry and copy. */
 export function stationNumber(station: StationIndex): number {
   return station + 1;
+}
+
+/** Number shown to visitors; the optional clone station is removed entirely. */
+export function visibleStationNumber(
+  station: StationIndex,
+  voiceCloningAvailable: boolean,
+): number {
+  return !voiceCloningAvailable && station === 5
+    ? STATION_COUNT - 1
+    : stationNumber(station);
+}
+
+export function visibleStationCount(voiceCloningAvailable: boolean): number {
+  return voiceCloningAvailable ? STATION_COUNT : STATION_COUNT - 1;
 }
 
 export type TransitionReason = "advance" | "skip";

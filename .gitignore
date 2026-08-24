@@ -1,8 +1,27 @@
-# Generated Dutch source pack and static derivatives.
-# Review CC BY attribution and CC BY-NC non-commercial restrictions before release.
+# Source caches and generated development fixtures stay local. The curated,
+# release-ready sample pack below is deliberately bundled so a fresh install has
+# the selected real/fake voices without another download.
 tools/.cache/
 web/public/samples/*
 !web/public/samples/manifest.example.json
+!web/public/samples/manifest.json
+!web/public/samples/PACK.md
+!web/public/samples/audio/
+!web/public/samples/audio/*
+!web/public/samples/codec/
+!web/public/samples/codec/*
+!web/public/samples/spec/
+!web/public/samples/spec/*
+!web/public/samples/factory/
+web/public/samples/factory/*
+!web/public/samples/factory/s[1-4]_nl_female.mp3
+!web/public/samples/factory/s[1-4]_nl_female.png
+!web/public/samples/factory/s[1-4]_nl_male.mp3
+!web/public/samples/factory/s[1-4]_nl_male.png
+!web/public/samples/factory/s[1-4]_neutral_female_en.mp3
+!web/public/samples/factory/s[1-4]_neutral_female_en.png
+!web/public/samples/factory/s[1-4]_neutral_male_en.mp3
+!web/public/samples/factory/s[1-4]_neutral_male_en.png
 web/public/plan.html
 
 # SQLite stats. Contains visitor guess counters; regenerated on first run.
@@ -15,6 +34,7 @@ web/data/
 # Local Python bytecode
 .venv/
 .venv-*/
+.runtime/
 __pycache__/
 *.py[cod]
 

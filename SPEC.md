@@ -13,8 +13,11 @@ Both run the *same* Next.js app; only the stats store differs.
   If no DB is reachable the app still runs fully — stats degrade to "no data yet", never a crash.
 
 Stations 1 to 4 and 6 use static assets. Station 5 records ten seconds and calls
-a local Chatterbox Multilingual V3 service on the MacBook. The service also runs
+a local Chatterbox Multilingual V3 service on the exhibit computer. The service also runs
 DF Arena 500M for Echo's independent guess. Participant audio stays on the machine.
+The browser polls the service health endpoint. If the native service is not live,
+Station 5 is removed from the route and the visitor goes from Station 4 directly
+to the finale; the visible progress count changes from six stations to five.
 
 ## Repository layout
 

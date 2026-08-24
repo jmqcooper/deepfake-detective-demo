@@ -1,13 +1,17 @@
 # Media pipeline
 
-Builds the sample pack the app serves (`web/public/samples/`, including `manifest.json`).
+Builds the sample pack the app serves (`web/public/samples/`, including
+`manifest.json`). The repository includes the hand-selected release pack so a
+normal install works without downloading media. The pipeline below is for
+deliberately replacing that bundle or creating a synthetic test fixture.
+
 Two ways to feed it:
 
 - **Synthetic fixture** — tones and silence, no licensed data, no GPU. Boots and lets
   you develop the whole app. **Not exhibit- or research-quality.** Use this for local dev.
 - **Production media** — real Common Voice speech, separately generated Voxtral fakes, and
   genuine ASR transcripts. An offline, GPU-backed step you run once and cache. Use this for
-  an exhibition.
+  an exhibition and commit the final selected assets as the next curated release pack.
 
 Either way, `prepare_samples.py` normalises the inputs and emits the pack; the app never
 sees the difference.

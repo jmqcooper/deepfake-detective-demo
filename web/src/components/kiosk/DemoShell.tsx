@@ -26,6 +26,8 @@ import {
   stationNumber,
   STATION_COUNT,
   transitionTelemetry,
+  visibleStationCount,
+  visibleStationNumber,
   type FlowAction,
   type StationIndex,
 } from "@/lib/kiosk-flow";
@@ -48,6 +50,30 @@ export function DemoShell() {
   const [flow, dispatch] = useReducer(flowReducer, undefined, initialFlow);
   const [score, setScore] = useState(0);
   const [total, setTotal] = useState(0);
+  const [voiceCloningAvailable, setVoiceCloningAvailable] = useState(false);
+
+  // Station 5 exists only while the separate native service is live. Polling
+  // also lets an operator start or stop it without rebuilding the web app.
+  useEffect(() => {
+    let stopped = false;
+    const check = async () => {
+      try {
+        const response = await fetch("/api/voice-clone/health", {
+          cache: "no-store",
+          signal: AbortSignal.timeout(3_000),
+        });
+        if (!stopped) setVoiceCloningAvailable(response.ok);
+      } catch {
+        if (!stopped) setVoiceCloningAvailable(false);
+      }
+    };
+    void check();
+    const timer = window.setInterval(() => void check(), 10_000);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   /**
    * Every transition goes through here, so every station reports its own
@@ -56,13 +82,17 @@ export function DemoShell() {
    */
   const go = useCallback(
     (action: FlowAction) => {
-      dispatch(action);
+      const resolvedAction =
+        action.type === "advance" || action.type === "skip"
+          ? { ...action, voiceCloningAvailable }
+          : action;
+      dispatch(resolvedAction);
       if (action.type === "advance" || action.type === "skip") {
         const telemetry = transitionTelemetry(flow, action.type);
         if (telemetry) void track(telemetry);
       }
     },
-    [flow, track],
+    [flow, track, voiceCloningAvailable],
   );
 
   const restart = useCallback(() => {
@@ -144,6 +174,8 @@ export function DemoShell() {
     flow.phase !== "attract" &&
     flow.phase !== "soundCheck" &&
     flow.station < STATION_COUNT - 1;
+  const visibleTotal = visibleStationCount(voiceCloningAvailable);
+  const visibleCurrent = visibleStationNumber(flow.station, voiceCloningAvailable);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 overflow-x-hidden p-3 sm:gap-6 sm:p-4 md:p-8">
@@ -199,17 +231,17 @@ export function DemoShell() {
         {showChrome && flow.phase !== "soundCheck" && (
           <div className="flex items-center gap-3">
             <ProgressRail
-              total={STATION_COUNT}
-              current={flow.station}
+              total={visibleTotal}
+              current={visibleCurrent - 1}
               label={t("brief.mission", {
-                n: stationNumber(flow.station),
-                total: STATION_COUNT,
+                n: visibleCurrent,
+                total: visibleTotal,
               })}
             />
             <span className="truncate font-mono text-[10px] tracking-[0.18em] text-ink-400 uppercase tnum">
               {t("brief.mission", {
-                n: stationNumber(flow.station),
-                total: STATION_COUNT,
+                n: visibleCurrent,
+                total: visibleTotal,
               })}
             </span>
           </div>
@@ -235,7 +267,13 @@ export function DemoShell() {
         )}
 
         {flow.phase === "briefing" && (
-          <Briefing station={flow.station} lang={lang} onStart={beginStation} />
+          <Briefing
+            station={flow.station}
+            lang={lang}
+            onStart={beginStation}
+            visibleNumber={visibleCurrent}
+            visibleTotal={visibleTotal}
+          />
         )}
 
         {flow.phase === "station" && flow.station === 0 && walkthrough && (
@@ -327,10 +365,14 @@ function Briefing({
   station,
   lang,
   onStart,
+  visibleNumber,
+  visibleTotal,
 }: {
   station: StationIndex;
   lang: Lang;
   onStart: () => void;
+  visibleNumber: number;
+  visibleTotal: number;
 }) {
   const t = useT(lang);
   const who = station === 0 ? "miko" : "echo";
@@ -340,7 +382,7 @@ function Briefing({
     <StationCard>
       <div className="flex flex-col items-center gap-5 py-4 text-center sm:gap-6 sm:py-8">
         <p className="rise font-mono text-xs font-bold tracking-[0.24em] text-ink-400 uppercase tnum">
-          {t("brief.mission", { n, total: STATION_COUNT })}
+          {t("brief.mission", { n: visibleNumber, total: visibleTotal })}
         </p>
         <Persona
           who={who}

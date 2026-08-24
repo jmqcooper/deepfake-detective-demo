@@ -7,12 +7,13 @@ volume on the machine.
 
 ## Before opening
 
-1. Enable the on-demand socket with `systemctl enable --now deepfake-voice.socket`, call the web proxy with `curl --fail -X POST http://127.0.0.1:3000/api/voice-clone/wake`, and wait for `/api/voice-clone/health` to report `"ready":true`.
-2. Start the app with `docker compose up -d --build`.
-3. Wait for `docker compose ps` to report the web service as healthy, then check `curl --fail http://127.0.0.1:3000/api/health`.
-4. Open the sound check and confirm both speakers are audible. Record and clone one test voice. Confirm microphone permission, playback and Echo's guess.
-5. Walk all six stations in Dutch and English. Verify touch input, the skip control, audio replay, the final safety scenario, and the idle reset.
-6. Back up statistics using the Docker commands below, and copy the resulting
+1. Enable the optional on-demand socket with `systemctl enable --now deepfake-voice.socket`.
+2. Start the app with `bash install/linux.sh`.
+3. Wait for the installer to open the app, then check `curl --fail http://127.0.0.1:3000/api/health`.
+4. If the exhibit includes voice cloning, call `curl --fail -X POST http://127.0.0.1:3000/api/voice-clone/wake` and wait for `/api/voice-clone/health` to report `"ready":true`. If it is intentionally disabled, confirm the route goes directly from Station 4 to the finale.
+5. Open the sound check and confirm both speakers are audible. When cloning is enabled, record and clone one test voice and confirm microphone permission, playback and Echo's guess.
+6. Walk the full route in Dutch and English (six stations with cloning; five without). Verify touch input, the skip control, audio replay, the final safety scenario, and the idle reset.
+7. Back up statistics using the Docker commands below, and copy the resulting
    snapshot to encrypted museum storage.
 
 Do not open the exhibition if health reports `media.status: "failed"`, the sound

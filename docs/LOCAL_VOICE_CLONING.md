@@ -11,6 +11,26 @@ run). By default they are released after ten idle minutes. A systemd socket can
 also start the worker on the first wake request and let it exit after the idle
 timeout, returning all CPU RAM and GPU VRAM to the host.
 
+## Normal installation
+
+Install and start the web app first, using the OS section in the root
+[README](../README.md). Then run exactly one optional voice installer:
+
+```text
+macOS:   ./install/voice-macos.command
+Windows: powershell -ExecutionPolicy Bypass -File .\install\voice-windows.ps1
+Linux:   bash install/voice-linux.sh
+```
+
+The installer supplies its own Python 3.12 runtime. It keeps Python, packages,
+the installer cache, and model weights under `.runtime/` and `.venv-voice/` in
+this checkout. It also reads the private token created by the web installer.
+Keep the voice terminal open; `Ctrl+C` stops the service.
+
+The service starts unloaded. When a visitor reaches Station 4, the app sends a
+wake request and the first run downloads the pinned weights. When the service is
+not live, the visitor flow omits the cloning station entirely.
+
 ## Supported hardware
 
 The service chooses the fastest available PyTorch device automatically:
@@ -25,7 +45,7 @@ Chatterbox and PyTorch. Set `VOICE_CLONE_DEVICE=cpu`, `cuda`, or `mps` to overri
 automatic selection. The service exits at startup when a requested accelerator
 is unavailable instead of silently falling back.
 
-## Set up once on macOS or Linux
+## Manual setup on macOS or Linux (advanced)
 
 ```bash
 python3.12 -m venv .venv-voice
@@ -34,7 +54,7 @@ python -m pip install -r tools/voice-clone-requirements.txt
 deactivate
 ```
 
-## Set up once on Windows
+## Manual setup on Windows (advanced)
 
 Run in PowerShell from the repository root:
 
@@ -95,6 +115,10 @@ Terminal 1 on Windows PowerShell:
 $env:VOICE_CLONE_HOST = "0.0.0.0"
 python -m tools.voice_clone_service
 ```
+
+When `.env` contains `VOICE_CLONE_TOKEN`, export that same value in terminal 1
+before starting the manual service. The OS-specific installers do this
+automatically. Do not expose an unauthenticated service bound to `0.0.0.0`.
 
 Then, in terminal 2:
 
@@ -196,8 +220,9 @@ successful check output confirms whether the VM selected `cuda` or `cpu`.
 
 The visitor records ten seconds, approves the recording, and receives one fixed
 generated sentence. The local detector then makes its own real-or-fake guess.
-The option appears only when both models are ready; when the service is absent,
-the station explains that it is unavailable and lets the visitor continue.
+The option appears only when both models are ready. When the service is absent,
+the web app detects the failed health check and routes the visitor directly from
+Station 4 to the safety finale; its progress rail shows five stations.
 
 ## Tested exhibit result
 
