@@ -15,13 +15,13 @@ from pathlib import Path
 
 import httpx
 
-OUT = Path(os.environ.get("OUT", "/gpfs/work5/0/prjs1904/nemo-demo/dutch"))
+OUT = Path(os.environ.get("OUT", "/gpfs/work5/0/prjs1904/ilcc-deepfake/dutch"))
 BASE = "http://127.0.0.1:8010"
 MODEL = "mistralai/Voxtral-4B-TTS-2603"
 MODEL_REVISION = "b81be46c3777f88621676791b512bb01dc1cb970"
 
 VOICE = "nl_male"
-# Short, modern, and sibilant-rich (museum / iets / geheims) so the high band
+# Short, modern, and sibilant-rich so the high band
 # visibly and audibly falls apart down the ladder.
 TEXT = "Hallo! Kom je vanmiddag naar het museum? Dan laat ik je iets geheims zien."
 

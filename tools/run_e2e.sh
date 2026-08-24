@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 PORT=${E2E_PORT:-3100}
-e2e_temp_dir=$(mktemp -d "${TMPDIR:-/tmp}/nemo-e2e.XXXXXX")
+e2e_temp_dir=$(mktemp -d "${TMPDIR:-/tmp}/ilcc-deepfake-e2e.XXXXXX")
 LOG="$e2e_temp_dir/server.log"
 
 cd "$ROOT/web"

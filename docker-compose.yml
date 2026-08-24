@@ -1,3 +1,5 @@
+name: ilcc-deepfake
+
 services:
   web:
     build:

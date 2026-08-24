@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "The Deepfake Detective Academy",
+    "title": "ilcc-deepfake",
     "hook": "AI can do more every day. It can even speak in a voice you trust.",
     "start": "Start your training"
   },

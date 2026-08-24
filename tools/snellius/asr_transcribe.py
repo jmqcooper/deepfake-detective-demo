@@ -11,7 +11,7 @@ from pathlib import Path
 
 import httpx
 
-OUT = Path(os.environ.get("OUT", "/gpfs/work5/0/prjs1904/nemo-demo/dutch"))
+OUT = Path(os.environ.get("OUT", "/gpfs/work5/0/prjs1904/ilcc-deepfake/dutch"))
 BASE = "http://127.0.0.1:8011"
 MODEL = "mistralai/Voxtral-Mini-4B-Realtime-2602"
 MODEL_REVISION = "2769294da9567371363522aac9bbcfdd19447add"

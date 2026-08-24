@@ -1,4 +1,4 @@
-# web — Deepfake Detective Academy app
+# web — ilcc-deepfake app
 
 The runtime is one **Next.js 16** app (App Router, TypeScript, Tailwind). It serves
 Stations 1–4 and the safety finale from a pre-generated sample pack, plus a tiny

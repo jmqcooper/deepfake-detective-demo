@@ -3,7 +3,7 @@
 For each language under $PROJ/cv/{nl,en}/ (uploaded by fetch_commonvoice.py):
   1. TTS every fake-candidate sentence. Dutch fakes use ONLY the native Dutch
      voices; English fakes use only the neutral voices. Anything else has an
-     audible accent, which museum testing rejected outright.
+     audible accent, which audience testing rejected outright.
   2. ASR every real candidate and every fake, full length, with the right
      language hint. build_cv_pack.py later keeps the clips whose transcript
      matches their sentence best — an automatic intelligibility screen.
@@ -17,7 +17,7 @@ from pathlib import Path
 
 import httpx
 
-PROJ = Path(os.environ.get("PROJ", "/gpfs/work5/0/prjs1904/nemo-demo"))
+PROJ = Path(os.environ.get("PROJ", "/gpfs/work5/0/prjs1904/ilcc-deepfake"))
 CV = PROJ / "cv"
 TTS_BASE = "http://127.0.0.1:8010"
 ASR_BASE = "http://127.0.0.1:8011"

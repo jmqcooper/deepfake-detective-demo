@@ -49,8 +49,9 @@ VOICE_CLONE_TOKEN=$(sed -n 's/^VOICE_CLONE_TOKEN=//p' .env | tail -n 1)
 [ -n "$VOICE_CLONE_TOKEN" ] || fail "VOICE_CLONE_TOKEN is empty in .env. Run the web app installer once to create it."
 export VOICE_CLONE_TOKEN
 export VOICE_CLONE_HOST=0.0.0.0
+export VOICE_CLONE_EAGER=1
 
 printf '\nVoice cloning is starting on http://127.0.0.1:8765\n'
-printf 'Keep this window open. The first visit to Station 4 downloads and warms the models.\n'
+printf 'Keep this window open. The models will download (first run) and load now.\n'
 printf 'Press Ctrl+C to stop voice cloning.\n\n'
 exec "$VOICE_PYTHON" -m tools.voice_clone_service

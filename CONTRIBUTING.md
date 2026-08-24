@@ -59,7 +59,7 @@ thin and the contracts are not.
   about the clips in the pack, and Echo must keep admitting he is reading prepared
   labels rather than analysing sound. See "Honesty rules" in [SPEC.md](SPEC.md).
 - **Nothing may depend on audio having played.** Autoplay is blocked on most
-  browsers and museum tablets are muted. Drive progression off `play`/`ended`, and
+  browsers and demo tablets are muted. Drive progression off `play`/`ended`, and
   show the failure.
 - **Next.js 16 differs from older versions.** Check `web/AGENTS.md` before writing app
   code.

@@ -27,7 +27,7 @@ import type { FinalScenarioChoice } from "@/lib/final-scenario";
  *
  * The scenario comes first, and it is the only part of the demo that transfers.
  * Everything before it teaches a visitor to notice something about a
- * spectrogram, which is a museum skill. This teaches what to do when a voice
+ * spectrogram, which is a demo skill. This teaches what to do when a voice
  * they love asks them for money, which is the one that matters at home.
  */
 export function Station6Diploma({

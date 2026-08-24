@@ -22,7 +22,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-# MLS utterances are audiobook segments, typically 10-20s — not the 4-9s a museum
+# MLS utterances are audiobook segments, typically 10-20s — not the 4-9s a demo
 # round wants. We take them long and let prepare_samples.py trim every clip to a
 # uniform 4.0s of speech (it must do that anyway, so duration can't leak the label).
 MIN_SEC, MAX_SEC = 8.0, 20.0

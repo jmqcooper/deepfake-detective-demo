@@ -27,9 +27,12 @@ the installer cache, and model weights under `.runtime/` and `.venv-voice/` in
 this checkout. It also reads the private token created by the web installer.
 Keep the voice terminal open; `Ctrl+C` stops the service.
 
-The service starts unloaded. When a visitor reaches Station 4, the app sends a
-wake request and the first run downloads the pinned weights. When the service is
-not live, the visitor flow omits the cloning station entirely.
+The OS installers set `VOICE_CLONE_EAGER=1`, so both models begin loading as soon
+as the service starts; the first run downloads the pinned weights. Station 4
+still sends an idempotent wake request, which also reloads models after the idle
+timeout. Run `ops/check-voice-deployment.sh` on macOS/Linux or
+`ops/check-voice-deployment.ps1` on Windows to wake, poll, and verify readiness.
+When the service is not live, the visitor flow omits the cloning station entirely.
 
 ## Supported hardware
 
@@ -149,9 +152,10 @@ The first internal connection to port 8765 starts the worker; after ten idle
 minutes the worker exits and systemd leaves only the lightweight listening
 socket behind.
 
-The example units assume the repository is installed at `/opt/nemo-demo`, the
-voice environment is `/opt/nemo-demo/.venv-voice`, and the unprivileged service
-account is `nemo`. Adjust those three values in `ops/deepfake-voice.service` when
+The example units assume the repository is installed at `/opt/ilcc-deepfake`, the
+voice environment is `/opt/ilcc-deepfake/.venv-voice`, and the unprivileged service
+account is `ilcc-deepfake`. Adjust those values in
+`ops/ilcc-deepfake-voice.service` when
 the server uses different paths or an account supplied by FEIOG.
 
 Create one random internal token and give the same value to the Podman web
@@ -159,26 +163,26 @@ container and the native service. This prevents anything that can reach port
 8765 from calling the model worker directly:
 
 ```bash
-sudo install -d -m 0750 /etc/deepfake-detective
+sudo install -d -m 0750 /etc/ilcc-deepfake
 VOICE_TOKEN=$(openssl rand -hex 32)
 printf 'VOICE_CLONE_TOKEN=%s\n' "$VOICE_TOKEN" \
-  | sudo tee /etc/deepfake-detective/voice.env >/dev/null
+  | sudo tee /etc/ilcc-deepfake/voice.env >/dev/null
 unset VOICE_TOKEN
-sudo chmod 0600 /etc/deepfake-detective/voice.env
+sudo chmod 0600 /etc/ilcc-deepfake/voice.env
 ```
 
-Copy the line shown by `sudo cat /etc/deepfake-detective/voice.env` into the
+Copy the line shown by `sudo cat /etc/ilcc-deepfake/voice.env` into the
 deployment `.env`; do not commit either file. Token-free operation remains
 available for local development only. The supplied systemd unit fails closed
 when the token file is missing or empty.
 
 ```bash
-sudo install -m 0644 ops/deepfake-voice.service /etc/systemd/system/
-sudo install -m 0644 ops/deepfake-voice.socket /etc/systemd/system/
+sudo install -m 0644 ops/ilcc-deepfake-voice.service /etc/systemd/system/
+sudo install -m 0644 ops/ilcc-deepfake-voice.socket /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now deepfake-voice.socket
+sudo systemctl enable --now ilcc-deepfake-voice.socket
 set -a
-. /etc/deepfake-detective/voice.env
+. /etc/ilcc-deepfake/voice.env
 set +a
 curl --fail -H "Authorization: Bearer $VOICE_CLONE_TOKEN" \
   -X POST http://127.0.0.1:8765/wake
@@ -211,8 +215,8 @@ file is deleted automatically:
 VOICE_SAMPLE_WAV=/path/to/test-recording.wav ops/check-voice-deployment.sh
 ```
 
-After the configured idle period, `systemctl status deepfake-voice.service`
-should show an inactive worker while `deepfake-voice.socket` remains active.
+After the configured idle period, `systemctl status ilcc-deepfake-voice.service`
+should show an inactive worker while `ilcc-deepfake-voice.socket` remains active.
 The next check or visitor wake request starts it again. The `device` field in the
 successful check output confirms whether the VM selected `cuda` or `cpu`.
 

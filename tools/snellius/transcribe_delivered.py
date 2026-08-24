@@ -1,4 +1,4 @@
-"""Miko listens to the DELIVERED audio — the exact clips a museum visitor hears.
+"""Miko listens to the DELIVERED audio — the exact clips a demo participant hears.
 
 The first pack transcribed the full-length source recordings, but the demo trims
 every case to 4.0 s. Miko then "heard" 4 seconds and wrote down 11 seconds of
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import httpx
 
-PROJ = Path(os.environ.get("PROJ", "/gpfs/work5/0/prjs1904/nemo-demo"))
+PROJ = Path(os.environ.get("PROJ", "/gpfs/work5/0/prjs1904/ilcc-deepfake"))
 DELIVERED = PROJ / "delivered"
 BASE = "http://127.0.0.1:8011"
 MODEL = "mistralai/Voxtral-Mini-4B-Realtime-2602"

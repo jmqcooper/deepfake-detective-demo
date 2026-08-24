@@ -130,7 +130,7 @@ page = f"""<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Utterance-plan — De Deepfake Detective Academie</title>
+<title>Utterance-plan — ilcc-deepfake</title>
 <style>
   :root {{
     --ink: #16203a; --muted: #5b6785; --line: #e3e7f0;
@@ -185,7 +185,7 @@ page = f"""<!doctype html>
 </head>
 <body>
 <main>
-  <h1>De Deepfake Detective Academie<br><span style="color:var(--muted);font-weight:600">utterance-plan &amp; verhaallijn</span></h1>
+  <h1>ilcc-deepfake<br><span style="color:var(--muted);font-weight:600">utterance-plan &amp; verhaallijn</span></h1>
   <p class="sub">Alle audio die de demo gebruikt (echt en synthetisch, NL en EN), per missie,
   met de rol van elke zin in het verhaal — plus de beslispunten. Audio is afspeelbaar in dit document.</p>
 
@@ -278,7 +278,7 @@ page = f"""<!doctype html>
       {ladder_rows()}
     </table>
     <div class="decide"><b>Beslispunt 3</b>
-    De museumzin ("kom je vanmiddag naar het museum…") — houden, of een andere zin die beter bij
+    De bestaande zin ("kom je vanmiddag naar het museum…") — houden, of een andere zin die beter bij
     de eindtentoonstelling past?</div>
   </section>
 

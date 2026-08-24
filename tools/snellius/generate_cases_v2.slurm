@@ -4,15 +4,15 @@
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=16
 #SBATCH --time=01:00:00
-#SBATCH --output=/gpfs/work5/0/prjs1904/nemo-demo/logs/cases-v2-%j.out
+#SBATCH --output=/gpfs/work5/0/prjs1904/ilcc-deepfake/logs/cases-v2-%j.out
 #
 # v2 case pool: TTS the fake sentences, then ASR-score every candidate
 # (see generate_cases_v2.py). Environment quirks copied from
 # generate_dutch.slurm — see the comments there.
 set -euo pipefail
 
-PROJ=/gpfs/work5/0/prjs1904/nemo-demo
-VENV=${VENV:-/scratch-shared/jcooper/nemo-demo/venv}
+PROJ=/gpfs/work5/0/prjs1904/ilcc-deepfake
+VENV=${VENV:-/scratch-shared/jcooper/ilcc-deepfake/venv}
 export HF_HOME=$PROJ/hf
 export VLLM_DISABLE_COMPILE_CACHE=1
 export CUDA_HOME="$VENV/lib/python3.11/site-packages/nvidia/cu13"

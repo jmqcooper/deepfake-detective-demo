@@ -1,6 +1,6 @@
-# Deepfake Detective Academy
+# ilcc-deepfake
 
-A local Dutch/English museum web app about speech recognition and fake voices.
+A local Dutch/English interactive demo about speech recognition and fake voices.
 
 ## Choose what to install
 
@@ -12,7 +12,7 @@ A local Dutch/English museum web app about speech recognition and fake voices.
 Install the web app first. Voice cloning is optional and has its own installer.
 
 First, [download the project ZIP](https://github.com/jmqcooper/deepfake-detective-demo/archive/refs/heads/main.zip)
- and extract it. Every command below is run from that extracted project folder.
+and extract it. Every command below is run from that extracted project folder.
 
 > [!NOTE]
 > If the voice service is not live on port `8765`, the app removes the cloning
@@ -122,11 +122,67 @@ bash install/voice-linux.sh
 ```
 
 Keep that terminal window open. The first install downloads the Python and ML
-packages. The first visit to Station 4 downloads and loads the pinned models;
-wait for the voice terminal to report that the models are ready. Reload the web
-page if the visit was already in progress. Press `Ctrl+C` in the voice terminal
-to stop it. The web app detects that within ten seconds and removes the cloning
-station for the next visitor.
+packages. The launcher then downloads the pinned model weights on the first run
+and starts loading both models immediately. Press `Ctrl+C` in the voice terminal
+to stop it.
+
+### Load and verify the models
+
+There are two model processes inside the voice service: the voice cloner and
+Echo's fake-voice detector. Starting the OS voice launcher begins loading both
+automatically. Loading is asynchronous, so a running terminal does **not** yet
+mean the models are ready.
+
+The supported explicit load operation is `POST /api/voice-clone/wake` through
+the web app. Station 4 sends this request automatically. It is safe to send it
+again, and it is how models are reloaded after the ten-minute idle unload.
+
+On macOS or Linux, this command checks the web app, sends the wake request, and
+waits up to five minutes for both models:
+
+```bash
+ops/check-voice-deployment.sh
+```
+
+On Windows PowerShell, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\ops\check-voice-deployment.ps1
+```
+
+A successful check ends with `PASS` and reports `device` as `mps`, `cuda`, or
+`cpu`. You can inspect the current state at any time:
+
+```bash
+curl http://127.0.0.1:3000/api/voice-clone/health
+```
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:3000/api/voice-clone/health
+```
+
+Interpret the result exactly as follows:
+
+| Result | Meaning | Action |
+|---|---|---|
+| `"ready": true` | Both models are loaded | Station 5 is ready |
+| `"loading": true` | Download/load is still running | Keep the voice terminal open and wait |
+| `"error": "..."` | Model loading failed | Read the error in the voice terminal |
+| HTTP `503` | The voice service cannot be reached | Start the voice launcher and check port `8765` |
+
+Readiness proves connectivity, authentication, model download, and model load.
+For a complete microphone and inference test, open <http://localhost:3000>, walk
+to the cloning station, record a voice, and confirm that a generated WAV plays.
+On macOS/Linux, an existing 3–12 second WAV can test the same request directly:
+
+```bash
+VOICE_SAMPLE_WAV=/absolute/path/to/test.wav ops/check-voice-deployment.sh
+```
+
+The temporary generated test output is deleted. Reload the browser if the voice
+service was started after the current visit began. When the service stops, the
+web app detects that within ten seconds and removes the cloning station for the
+next visitor.
 
 The service uses port `8765`. The web container authenticates with the random
 token created in the gitignored `.env` file. Do not expose port `8765` through a
@@ -181,13 +237,13 @@ web/src/components/     kiosk shell and station interfaces
 web/src/i18n/           Dutch and English copy
 web/src/lib/            shared contracts and tested logic
 tools/                  media pipeline and native voice service
-ops/                    museum deployment and maintenance
+ops/                    demo deployment and maintenance
 ```
 
 Operational documentation:
 
 - [Local voice cloning](docs/LOCAL_VOICE_CLONING.md)
-- [Museum operations](docs/MUSEUM_OPERATIONS.md)
+- [Demo operations](docs/DEMO_OPERATIONS.md)
 - [Technical specification](SPEC.md)
 - [Contributing](CONTRIBUTING.md)
 

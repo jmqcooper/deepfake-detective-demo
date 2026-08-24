@@ -35,7 +35,7 @@ import {
  * rung each time the clip ends, so the visitor hears the degradation as a
  * story rather than fiddling a lever mid-loop. After the tour (or as soon as
  * the visitor taps a rung themselves) it becomes free play: tap a rung, hear
- * that quality exactly once. Nothing ever loops forever — museum halls do not
+ * that quality exactly once. Nothing ever loops forever — public venues do not
  * need a fifth hour of "Hallo! Kom je vanmiddag…".
  *
  * The payoff is a prediction rather than a prewritten claim. Before the

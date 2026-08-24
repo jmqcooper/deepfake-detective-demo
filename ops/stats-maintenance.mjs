@@ -62,7 +62,7 @@ try {
       }
     });
     transaction();
-    console.log("museum statistics reset");
+    console.log("ilcc-deepfake statistics reset");
   }
 } finally {
   db.close();

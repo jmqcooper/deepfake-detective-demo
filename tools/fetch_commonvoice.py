@@ -43,7 +43,7 @@ def clean_sentence(s: str) -> str | None:
     s = " ".join(s.split())
     if not s or not (MIN_WORDS <= len(s.split()) <= MAX_WORDS):
         return None
-    # Quotes, brackets and stray symbols make poor TTS prompts and poor museum
+    # Quotes, brackets and stray symbols make poor TTS prompts and poor demo
     # captions alike.
     if re.search(r'["""«»()\[\]{};:_/\\|@#$%^&*<>~`0-9]', s):
         return None
