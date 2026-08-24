@@ -11,6 +11,7 @@ type ModelGuess = { label: "real" | "fake"; confidence: "low" | "medium" | "high
 type ModelHealth = { ready?: boolean; loading?: boolean; error?: string | null };
 
 const RECORD_SECONDS = 10;
+const MODEL_READY_TIMEOUT_MS = 5 * 60 * 1_000;
 
 export function Station5VoiceClone({ lang, onDone }: { lang: Lang; onDone: () => void }) {
   const t = useT(lang);
@@ -24,8 +25,21 @@ export function Station5VoiceClone({ lang, onDone }: { lang: Lang; onDone: () =>
   const [playing, setPlaying] = useState<"reference" | "clone" | null>(null);
   const recordingBlob = useRef<Blob | null>(null);
   const stopRecording = useRef<((keepRecording: boolean) => void) | null>(null);
+  const recordingTimer = useRef<number | null>(null);
   const cloneRequest = useRef<AbortController | null>(null);
+  const playback = useRef<HTMLAudioElement | null>(null);
   const objectUrls = useRef(new Set<string>());
+
+  const stopPlayback = useCallback(() => {
+    const audio = playback.current;
+    playback.current = null;
+    if (audio) {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+    }
+    setPlaying(null);
+  }, []);
 
   const createObjectUrl = useCallback((blob: Blob): string => {
     const url = URL.createObjectURL(blob);
@@ -39,13 +53,15 @@ export function Station5VoiceClone({ lang, onDone }: { lang: Lang; onDone: () =>
   }, []);
 
   const clearUrls = useCallback(() => {
+    stopPlayback();
     for (const url of objectUrls.current) URL.revokeObjectURL(url);
     objectUrls.current.clear();
-  }, []);
+  }, [stopPlayback]);
 
   useEffect(() => {
     const controller = new AbortController();
     let timer: number | undefined;
+    const deadline = Date.now() + MODEL_READY_TIMEOUT_MS;
 
     const check = async (): Promise<void> => {
       try {
@@ -57,6 +73,10 @@ export function Station5VoiceClone({ lang, onDone }: { lang: Lang; onDone: () =>
         if (body?.ready === true) {
           setAvailable(true);
         } else if (body?.loading === true && !body.error) {
+          if (Date.now() >= deadline) {
+            setAvailable(false);
+            return;
+          }
           setAvailable(null);
           timer = window.setTimeout(() => void check(), 2_000);
         } else {
@@ -99,21 +119,30 @@ export function Station5VoiceClone({ lang, onDone }: { lang: Lang; onDone: () =>
   }, [clearUrls]);
 
   const playUrl = useCallback((url: string, which: "reference" | "clone") => {
+    stopPlayback();
     const audio = new Audio(url);
+    playback.current = audio;
     setPlaying(which);
-    audio.onended = () => setPlaying(null);
-    audio.onerror = () => setPlaying(null);
-    void audio.play();
-  }, []);
+    const finish = () => {
+      if (playback.current !== audio) return;
+      playback.current = null;
+      setPlaying(null);
+    };
+    audio.onended = finish;
+    audio.onerror = finish;
+    void audio.play().catch(finish);
+  }, [stopPlayback]);
 
   const start = useCallback(async () => {
+    let stream: MediaStream | null = null;
+    let context: AudioContext | null = null;
     try {
       clearUrls();
       recordingBlob.current = null;
       setReferenceUrl(null);
       setCloneUrl(null);
       setGuess(null);
-      const stream = await navigator.mediaDevices.getUserMedia({
+      stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
           echoCancellation: false,
@@ -121,10 +150,13 @@ export function Station5VoiceClone({ lang, onDone }: { lang: Lang; onDone: () =>
           autoGainControl: false,
         },
       });
-      const context = new AudioContext();
-      const source = context.createMediaStreamSource(stream);
-      const processor = context.createScriptProcessor(4096, 1, 1);
-      const silence = context.createGain();
+      context = new AudioContext();
+      if (context.state === "suspended") await context.resume();
+      const activeStream = stream;
+      const activeContext = context;
+      const source = activeContext.createMediaStreamSource(activeStream);
+      const processor = activeContext.createScriptProcessor(4096, 1, 1);
+      const silence = activeContext.createGain();
       silence.gain.value = 0;
       const chunks: Float32Array[] = [];
       let recordingSampleRate = context.sampleRate;
@@ -134,17 +166,21 @@ export function Station5VoiceClone({ lang, onDone }: { lang: Lang; onDone: () =>
       };
       source.connect(processor);
       processor.connect(silence);
-      silence.connect(context.destination);
+      silence.connect(activeContext.destination);
 
       let stopped = false;
       const finish = (keepRecording: boolean) => {
         if (stopped) return;
         stopped = true;
+        if (recordingTimer.current !== null) {
+          window.clearTimeout(recordingTimer.current);
+          recordingTimer.current = null;
+        }
         processor.disconnect();
         source.disconnect();
         silence.disconnect();
-        stream.getTracks().forEach((track) => track.stop());
-        void context.close();
+        activeStream.getTracks().forEach((track) => track.stop());
+        void activeContext.close().catch(() => undefined);
         stopRecording.current = null;
         if (keepRecording) {
           const blob = encodePcm16Wav(joinSamples(chunks), recordingSampleRate);
@@ -160,8 +196,15 @@ export function Station5VoiceClone({ lang, onDone }: { lang: Lang; onDone: () =>
       setSeconds(RECORD_SECONDS);
       setPhase("recording");
       announce(t("station5.recording"));
-      window.setTimeout(() => finish(true), RECORD_SECONDS * 1000);
+      recordingTimer.current = window.setTimeout(
+        () => finish(true),
+        RECORD_SECONDS * 1000,
+      );
     } catch {
+      stream?.getTracks().forEach((track) => track.stop());
+      if (context && context.state !== "closed") {
+        void context.close().catch(() => undefined);
+      }
       setPhase("error");
     }
   }, [clearUrls, createObjectUrl, t]);

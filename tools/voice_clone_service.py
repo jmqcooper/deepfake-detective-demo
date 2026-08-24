@@ -17,10 +17,15 @@ import signal
 import tempfile
 import threading
 import time
+import warnings
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+# tqdm reads this when its class is imported. Chatterbox captures that class in
+# several modules, so it must be set before any ML dependency is imported.
+os.environ.setdefault("TQDM_DISABLE", "1")
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
@@ -46,6 +51,10 @@ DETECTOR_REVISION = "8258fa8e74ff9b8ad20d4c939c1a7f694a6e4080"
 MAX_UPLOAD_BYTES = 4 * 1024 * 1024
 MIN_SECONDS = 3.0
 MAX_SECONDS = 12.0
+MIN_SAMPLE_RATE = 8_000
+MAX_SAMPLE_RATE = 96_000
+MAX_CHANNELS = 2
+DETECTOR_SAMPLE_RATE = 16_000
 OUTPUT_TEXT = {
     "nl": "Dit klinkt als jouw stem. Deze zin heb jij nooit gezegd.",
     "en": "This sounds like your voice. You never said this sentence.",
@@ -69,6 +78,47 @@ validate_token_configuration(
     os.getenv("VOICE_CLONE_REQUIRE_TOKEN", "0").lower() in {"1", "true", "yes"},
 )
 clone_slot = threading.BoundedSemaphore(1)
+
+
+def configure_model_loader_output() -> None:
+    """Keep third-party model loaders quiet and deterministic in the service.
+
+    tqdm's background monitor can race its own weak set when Hugging Face creates
+    several progress bars during a second in-process model load.  Progress bars
+    are not useful in a long-running service, and disabling the monitor avoids a
+    noisy, non-fatal thread crash without changing model loading itself.
+    """
+    from huggingface_hub.utils import disable_progress_bars
+    from tqdm import tqdm
+    from transformers.utils import logging as transformers_logging
+
+    tqdm.monitor_interval = 0
+    disable_progress_bars()
+    transformers_logging.disable_progress_bar()
+    transformers_logging.set_verbosity_error()
+    logging.getLogger(
+        "chatterbox.models.t3.inference.alignment_stream_analyzer"
+    ).setLevel(logging.ERROR)
+
+    # These come from pinned transitive dependencies. Keep the service log for
+    # actionable loader failures rather than known package migration notices.
+    warnings.filterwarnings(
+        "ignore",
+        message=r"pkg_resources is deprecated as an API\..*",
+        category=UserWarning,
+        module=r"perth(?:\..*)?",
+    )
+    warnings.filterwarnings(
+        "ignore",
+        message=r"`LoRACompatibleLinear` is deprecated.*",
+        category=FutureWarning,
+        module=r"diffusers(?:\..*)?",
+    )
+    warnings.filterwarnings(
+        "ignore",
+        message=r"`torch\.backends\.cuda\.sdp_kernel\(\)` is deprecated\..*",
+        category=FutureWarning,
+    )
 
 
 @dataclass
@@ -142,8 +192,14 @@ def load_models() -> ModelBundle:
     started = time.monotonic()
     logger.info("Loading pinned voice-cloning and detection models")
     import torch
+
+    configure_model_loader_output()
     from huggingface_hub import snapshot_download
     from transformers import pipeline
+
+    device: str | None = None
+    clone_model: Any = None
+    detector: Any = None
 
     try:
         device = resolve_device(
@@ -183,9 +239,25 @@ def load_models() -> ModelBundle:
         )
         return ModelBundle(clone_model, detector, device, torch)
     except Exception:
+        clone_model = None
+        detector = None
+        loaded_device = None
+        gc.collect()
+        clear_accelerator_cache(torch, device)
         last_load_seconds = round(time.monotonic() - started, 2)
         logger.exception("Voice models failed to load")
         raise
+
+
+def clear_accelerator_cache(torch: Any, device: str | None) -> None:
+    """Best-effort cache cleanup for successful releases and failed loads."""
+    try:
+        if device == "cuda" and torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        elif device == "mps" and torch.backends.mps.is_available():
+            torch.mps.empty_cache()
+    except Exception:
+        logger.exception("Failed to clear the %s accelerator cache", device)
 
 
 def release_models(bundle: ModelBundle) -> None:
@@ -195,10 +267,7 @@ def release_models(bundle: ModelBundle) -> None:
     bundle.clone_model = None
     bundle.detector = None
     gc.collect()
-    if device == "cuda" and torch.cuda.is_available():
-        torch.cuda.empty_cache()
-    elif device == "mps" and torch.backends.mps.is_available():
-        torch.mps.empty_cache()
+    clear_accelerator_cache(torch, device)
     logger.info("Released idle voice models from %s", device)
 
 
@@ -276,8 +345,18 @@ def wake(request: Request) -> dict[str, object]:
     }
 
 
-def detector_guess(bundle: ModelBundle, waveform: Any) -> tuple[str, str]:
+def detector_guess(
+    bundle: ModelBundle, waveform: Any, sample_rate: int
+) -> tuple[str, str]:
     import numpy as np
+    from scipy.signal import resample_poly
+
+    if sample_rate != DETECTOR_SAMPLE_RATE:
+        waveform = resample_poly(
+            waveform,
+            DETECTOR_SAMPLE_RATE,
+            sample_rate,
+        ).astype("float32", copy=False)
 
     peak = max(float(np.max(np.abs(waveform))), 0.01)
     rng = np.random.default_rng(7)
@@ -286,7 +365,11 @@ def detector_guess(bundle: ModelBundle, waveform: Any) -> tuple[str, str]:
         np.clip(waveform * 0.92, -1.0, 1.0),
         np.clip(waveform + rng.normal(0.0, peak / 180.0, waveform.shape), -1.0, 1.0),
     ]
-    labels = [str(bundle.detector(audio)["label"]).lower() for audio in variants]
+    labels = [
+        str(bundle.detector(audio)["label"]).strip().lower() for audio in variants
+    ]
+    if any(label not in {"spoof", "bonafide"} for label in labels):
+        raise RuntimeError(f"detector returned unexpected labels: {labels!r}")
     fake_votes = sum(label == "spoof" for label in labels)
     label = "fake" if fake_votes >= 2 else "real"
     agreement = max(fake_votes, len(labels) - fake_votes)
@@ -295,6 +378,8 @@ def detector_guess(bundle: ModelBundle, waveform: Any) -> tuple[str, str]:
 
 
 def generate_clone(temp_path: Path, lang: str) -> tuple[Any, str, str, int]:
+    import numpy as np
+
     profile = GENERATION_PROFILES[lang]
     with models.use() as bundle, bundle.torch.inference_mode():
         clone_model = bundle.clone_model
@@ -308,8 +393,54 @@ def generate_clone(temp_path: Path, lang: str) -> tuple[Any, str, str, int]:
             cfg_weight=profile["cfg_weight"],
         )
         waveform = generated.squeeze().detach().float().cpu().numpy()
-        label, confidence = detector_guess(bundle, waveform)
-        return waveform, label, confidence, clone_model.sr
+        if waveform.ndim != 1 or waveform.size == 0 or not np.isfinite(waveform).all():
+            raise RuntimeError("clone model returned invalid audio")
+        sample_rate = int(clone_model.sr)
+        if not MIN_SAMPLE_RATE <= sample_rate <= MAX_SAMPLE_RATE:
+            raise RuntimeError(f"clone model returned invalid sample rate: {sample_rate}")
+        label, confidence = detector_guess(bundle, waveform, sample_rate)
+        return waveform, label, confidence, sample_rate
+
+
+def decode_reference_wav(payload: bytes) -> tuple[Any, int]:
+    """Validate WAV metadata before allocating and decoding its samples."""
+    import numpy as np
+    import soundfile as sf
+
+    try:
+        info = sf.info(io.BytesIO(payload))
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="invalid_wav") from exc
+
+    if (
+        info.format != "WAV"
+        or not 1 <= info.channels <= MAX_CHANNELS
+        or not MIN_SAMPLE_RATE <= info.samplerate <= MAX_SAMPLE_RATE
+        or info.frames <= 0
+    ):
+        raise HTTPException(status_code=400, detail="invalid_wav")
+    duration = info.frames / info.samplerate
+    if duration < MIN_SECONDS or duration > MAX_SECONDS:
+        raise HTTPException(status_code=400, detail="recording_length")
+
+    try:
+        source, sample_rate = sf.read(
+            io.BytesIO(payload), dtype="float32", always_2d=False
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="invalid_wav") from exc
+    if source.ndim == 2:
+        source = source.mean(axis=1)
+    if source.ndim != 1 or source.size == 0 or not np.isfinite(source).all():
+        raise HTTPException(status_code=400, detail="invalid_wav")
+    # Chatterbox uses 40 ms acoustic-token frames. Browser capture ends on an
+    # arbitrary audio callback boundary; trim at most one frame so its mel and
+    # token lengths agree instead of taking a warning-and-repair path internally.
+    alignment_frames = max(1, round(sample_rate * 0.04))
+    aligned_length = source.size - (source.size % alignment_frames)
+    if aligned_length / sample_rate >= MIN_SECONDS:
+        source = source[:aligned_length]
+    return source, sample_rate
 
 
 @app.post("/clone")
@@ -319,27 +450,16 @@ async def clone(
     lang: str = Form(...),
 ) -> Response:
     require_internal_auth(request)
+    if lang not in OUTPUT_TEXT:
+        raise HTTPException(status_code=400, detail="unsupported_language")
     if not models.status().ready:
         models.wake()
         raise HTTPException(status_code=503, detail="models_not_ready")
-    if lang not in OUTPUT_TEXT:
-        raise HTTPException(status_code=400, detail="unsupported_language")
 
     payload = await audio.read(MAX_UPLOAD_BYTES + 1)
     if len(payload) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="recording_too_large")
-
-    try:
-        import soundfile as sf
-
-        source, sample_rate = sf.read(io.BytesIO(payload), dtype="float32", always_2d=False)
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail="invalid_wav") from exc
-    if source.ndim == 2:
-        source = source.mean(axis=1)
-    duration = len(source) / sample_rate
-    if duration < MIN_SECONDS or duration > MAX_SECONDS:
-        raise HTTPException(status_code=400, detail="recording_length")
+    source, sample_rate = decode_reference_wav(payload)
 
     temp_path: Path | None = None
     if not clone_slot.acquire(blocking=False):
@@ -349,6 +469,8 @@ async def clone(
             headers={"Retry-After": "10"},
         )
     try:
+        import soundfile as sf
+
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as handle:
             temp_path = Path(handle.name)
         sf.write(temp_path, source, sample_rate, subtype="PCM_16")
@@ -368,6 +490,11 @@ async def clone(
         )
     except ResourceNotReady as exc:
         raise HTTPException(status_code=503, detail="models_not_ready") from exc
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Voice clone request failed")
+        raise HTTPException(status_code=503, detail="clone_failed") from exc
     finally:
         if temp_path is not None:
             temp_path.unlink(missing_ok=True)
