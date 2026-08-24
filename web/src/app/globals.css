@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   Deepfake Detective Academy — forensic lab, after hours.
+   ilcc-deepfake — forensic lab, after hours.
    Miko (the listener) is warm amber. Echo (the analyst) is cold teal.
    Evidence is amber. Verdicts are green/red. Nothing is coloured decoratively.
    ========================================================================= */
@@ -95,7 +95,7 @@ html {
 /* ----------------------------------------------------------------- focus --- */
 
 /* One loud, consistent focus ring. The default UA outline disappears entirely
-   against these surfaces, and a museum tablet may well be driven from a
+   against these surfaces, and a demo tablet may well be driven from a
    keyboard, a switch or a bluetooth remote rather than a fingertip. */
 :where(a, button, [role="slider"], [tabindex]):focus-visible {
   outline: 3px solid var(--color-echo-300);

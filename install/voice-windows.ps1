@@ -51,8 +51,9 @@ try {
 
     $env:VOICE_CLONE_TOKEN = $token
     $env:VOICE_CLONE_HOST = "0.0.0.0"
+    $env:VOICE_CLONE_EAGER = "1"
     Write-Host "`nVoice cloning is starting on http://127.0.0.1:8765" -ForegroundColor Green
-    Write-Host "Keep this window open. The first visit to Station 4 downloads and warms the models."
+    Write-Host "Keep this window open. The models will download (first run) and load now."
     Write-Host "Press Ctrl+C to stop voice cloning.`n"
     & $VoicePython -m tools.voice_clone_service
     if ($LASTEXITCODE -ne 0) { throw "The voice service stopped with an error." }

@@ -4,7 +4,7 @@
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=16
 #SBATCH --time=01:30:00
-#SBATCH --output=/gpfs/work5/0/prjs1904/nemo-demo/logs/voxtral-%j.out
+#SBATCH --output=/gpfs/work5/0/prjs1904/ilcc-deepfake/logs/voxtral-%j.out
 #
 # Generates the Dutch half of the demo on one H100:
 #   1. Voxtral-4B-TTS  → a deepfake of every MLS sentence (the "fake" clips)
@@ -13,10 +13,10 @@
 # Both models are served through vLLM-Omni on localhost inside this job.
 set -euo pipefail
 
-PROJ=/gpfs/work5/0/prjs1904/nemo-demo
+PROJ=/gpfs/work5/0/prjs1904/ilcc-deepfake
 # The venv lives on scratch, not on the project filesystem: vLLM + CUDA wheels are
 # ~18GB and blow the prjs1904 quota. Model weights stay in $PROJ/hf (they persist).
-VENV=${VENV:-/scratch-shared/jcooper/nemo-demo/venv}
+VENV=${VENV:-/scratch-shared/jcooper/ilcc-deepfake/venv}
 export HF_HOME=$PROJ/hf
 export OUT=$PROJ/dutch
 export VLLM_DISABLE_COMPILE_CACHE=1

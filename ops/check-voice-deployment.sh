@@ -76,8 +76,8 @@ if [ -n "$sample_wav" ]; then
     echo "VOICE_SAMPLE_WAV does not name a readable file: $sample_wav" >&2
     exit 2
   fi
-  output_wav="$(mktemp "${TMPDIR:-/tmp}/deepfake-voice-check.XXXXXX.wav")"
-  headers="$(mktemp "${TMPDIR:-/tmp}/deepfake-voice-check.XXXXXX.headers")"
+  output_wav="$(mktemp "${TMPDIR:-/tmp}/ilcc-deepfake-voice-check.XXXXXX.wav")"
+  headers="$(mktemp "${TMPDIR:-/tmp}/ilcc-deepfake-voice-check.XXXXXX.headers")"
   trap 'rm -f "$output_wav" "$headers"' EXIT HUP INT TERM
 
   echo "Running one real clone request ..."

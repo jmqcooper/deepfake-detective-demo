@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
-// Display: characterful, slightly editorial — museum signage, not a SaaS dashboard.
+// Display: characterful and slightly editorial, not a SaaS dashboard.
 const bricolage = localFont({
   src: "./fonts/BricolageGrotesque-variable.ttf",
   variable: "--font-bricolage",
@@ -27,9 +27,9 @@ const mono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "De Deepfake Detective Academie",
+  title: "ilcc-deepfake",
   description:
-    "Interactieve museumdemo over spraak-AI en deepfakes — INDEEP / UvA",
+    "Interactieve demo over spraak-AI en deepfakes — ILCC / UvA",
 };
 
 export const viewport: Viewport = {

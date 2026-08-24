@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and release-check the museum's bilingual sample bundle."""
+"""Build and release-check the demo's bilingual sample bundle."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ ASR_REVISION = "2769294da9567371363522aac9bbcfdd19447add"
 COMMON_VOICE_REVISION = "8262c16bf297c87a9cd88c51997c4758ed7a8ba2"
 # The factory ships exactly one female and one male voice per language. The
 # language-neutral extras (cheerful_female et al.) carry a noticeable
-# non-native accent on Dutch — museum feedback called it "almost German" —
+# non-native accent on Dutch — demo feedback called it "almost German" —
 # so their clips stay in the cache but are never packaged.
 FACTORY_VOICES = {"nl_female", "nl_male", "neutral_female", "neutral_male"}
 

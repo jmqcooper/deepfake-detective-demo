@@ -11,7 +11,7 @@ if (major !== 22) {
 
 const requireFromWeb = createRequire(new URL("../web/package.json", import.meta.url));
 const Database = requireFromWeb("better-sqlite3");
-const temporary = mkdtempSync(join(tmpdir(), "nemo-sqlite-smoke-"));
+const temporary = mkdtempSync(join(tmpdir(), "ilcc-deepfake-sqlite-smoke-"));
 try {
   const db = new Database(join(temporary, "smoke.db"));
   db.exec("CREATE TABLE smoke (value INTEGER NOT NULL); INSERT INTO smoke VALUES (22)");

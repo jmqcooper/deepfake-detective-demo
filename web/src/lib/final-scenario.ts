@@ -1,7 +1,7 @@
 /**
  * The last thing a visitor does, and the only thing they really need to keep.
  *
- * Spotting a spectrogram artefact is a museum trick; it does not transfer to a
+ * Spotting a spectrogram artefact is a demo trick; it does not transfer to a
  * phone call at dinner time. So the demo ends on the behaviour instead: a voice
  * you know asks for money and asks you to keep it quiet — what do you actually
  * do? The correct answer is the same one every fraud helpline gives, and it

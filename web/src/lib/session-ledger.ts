@@ -10,7 +10,7 @@
  *
  * Bounded on purpose. This is an anonymous, in-process cache, not storage: at
  * most MAX_SESSIONS live entries, each expiring after SESSION_TTL_MS. Nothing
- * is written to disk, and an id is forgotten long before a museum closes.
+ * is written to disk, and an id is forgotten long before the venue closes.
  */
 
 import type { ClipLabel } from "@/lib/manifest-schema";

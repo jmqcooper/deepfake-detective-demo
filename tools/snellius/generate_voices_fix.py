@@ -1,6 +1,6 @@
 """Regenerate the accented scripted clips with clean voices.
 
-Voice policy, after museum-testing feedback:
+Voice policy, after listening-test feedback:
   - Dutch clips use the native Dutch voices only (nl_female / nl_male).
     `cheerful_female` is language-neutral and gave the Station 1 walkthrough a
     German-ish accent — bad on its own, and it also derailed the ASR into
@@ -21,7 +21,7 @@ from pathlib import Path
 
 import httpx
 
-OUT = Path(os.environ.get("OUT", "/gpfs/work5/0/prjs1904/nemo-demo/dutch"))
+OUT = Path(os.environ.get("OUT", "/gpfs/work5/0/prjs1904/ilcc-deepfake/dutch"))
 BASE = "http://127.0.0.1:8010"
 MODEL = "mistralai/Voxtral-4B-TTS-2603"
 MODEL_REVISION = "b81be46c3777f88621676791b512bb01dc1cb970"

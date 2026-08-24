@@ -1,15 +1,15 @@
 [Unit]
-Description=NEMO Voice Lab kiosk browser
+Description=ilcc-deepfake kiosk browser
 After=graphical.target docker.service network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=nemo
+User=ilcc-deepfake
 Environment=DISPLAY=:0
 Environment=KIOSK_URL=http://127.0.0.1:3000
 Environment=KIOSK_BROWSER=chromium
-ExecStart=/opt/nemo-demo/ops/kiosk-launch.sh
+ExecStart=/opt/ilcc-deepfake/ops/kiosk-launch.sh
 Restart=always
 RestartSec=3
 

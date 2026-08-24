@@ -3,7 +3,7 @@
  *
  * Three things changed here and they are all the same change: the browser used
  * to tell the server whether a guess was right and what the final score was.
- * A museum kiosk is not a hostile environment, but a public URL is, and an
+ * A demo kiosk is not a hostile environment, but a public URL is, and an
  * endpoint that accepts `{"correct": true}` five hundred times has no numbers
  * worth reporting. So:
  *

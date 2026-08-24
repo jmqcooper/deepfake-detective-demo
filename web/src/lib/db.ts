@@ -26,7 +26,7 @@ CREATE INDEX IF NOT EXISTS idx_events_ts   ON events(ts);
  * inside a live process; this catches them across a restart, without a SELECT
  * before every write.
  *
- * Kept out of SCHEMA and made non-fatal on purpose: a museum's existing
+ * Kept out of SCHEMA and made non-fatal on purpose: an existing deployment's
  * database may already contain duplicate guesses from before the ledger
  * existed, and refusing to open it would take the exhibit's stats down to fix a
  * historical accounting nicety.

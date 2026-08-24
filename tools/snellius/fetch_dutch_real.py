@@ -21,7 +21,7 @@ from pathlib import Path
 import soundfile as sf
 from datasets import load_dataset
 
-OUT = Path(os.environ.get("OUT", "/gpfs/work5/0/prjs1904/nemo-demo/dutch"))
+OUT = Path(os.environ.get("OUT", "/gpfs/work5/0/prjs1904/ilcc-deepfake/dutch"))
 N_WANTED = int(os.environ.get("N", "14"))
 MIN_SEC, MAX_SEC = 4.0, 9.0
 MIN_WORDS, MAX_WORDS = 6, 18

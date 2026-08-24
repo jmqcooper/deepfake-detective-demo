@@ -3,13 +3,13 @@
 # Run on the LOGIN node (it has internet); the GPU nodes do not need it.
 set -euo pipefail
 
-PROJ=/gpfs/work5/0/prjs1904/nemo-demo
+PROJ=/gpfs/work5/0/prjs1904/ilcc-deepfake
 # The venv goes on SCRATCH, not the project filesystem: vLLM + the CUDA wheels are
 # ~18GB and will blow the prjs1904 disk quota (uv then fails mid-install with
 # "Disk quota exceeded", leaving a half-installed vLLM whose CUDA extensions are
 # missing — which looks exactly like a broken wheel and is a nightmare to debug).
 # Model weights stay on the project fs, where they persist across scratch purges.
-VENV=${VENV:-/scratch-shared/$USER/nemo-demo/venv}
+VENV=${VENV:-/scratch-shared/$USER/ilcc-deepfake/venv}
 export HF_HOME=$PROJ/hf
 
 mkdir -p "$PROJ" "$HF_HOME" "$(dirname "$VENV")"

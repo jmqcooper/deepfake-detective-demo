@@ -4,17 +4,17 @@
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=16
 #SBATCH --time=00:45:00
-#SBATCH --output=/gpfs/work5/0/prjs1904/nemo-demo/logs/asr-delivered-%j.out
+#SBATCH --output=/gpfs/work5/0/prjs1904/ilcc-deepfake/logs/asr-delivered-%j.out
 #
 # ASR-only pass over the DELIVERED demo audio (see transcribe_delivered.py).
 # Upload the decoded delivery clips to $PROJ/delivered/{audio,codec}/ first:
-#   scp -r delivered thesis:/gpfs/work5/0/prjs1904/nemo-demo/
+#   scp -r delivered thesis:/gpfs/work5/0/prjs1904/ilcc-deepfake/
 # Environment quirks below are copied from generate_dutch.slurm — see the
 # comments there for why each one exists.
 set -euo pipefail
 
-PROJ=/gpfs/work5/0/prjs1904/nemo-demo
-VENV=${VENV:-/scratch-shared/jcooper/nemo-demo/venv}
+PROJ=/gpfs/work5/0/prjs1904/ilcc-deepfake
+VENV=${VENV:-/scratch-shared/jcooper/ilcc-deepfake/venv}
 export HF_HOME=$PROJ/hf
 export VLLM_DISABLE_COMPILE_CACHE=1
 export CUDA_HOME="$VENV/lib/python3.11/site-packages/nvidia/cu13"

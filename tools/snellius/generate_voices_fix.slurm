@@ -4,15 +4,15 @@
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=16
 #SBATCH --time=01:00:00
-#SBATCH --output=/gpfs/work5/0/prjs1904/nemo-demo/logs/voices-fix-%j.out
+#SBATCH --output=/gpfs/work5/0/prjs1904/ilcc-deepfake/logs/voices-fix-%j.out
 #
 # English mirror of every scripted clip: TTS (see generate_voices_fix.py), then
 # ASR transcripts for the new English factory clips. Environment quirks are
 # copied from generate_dutch.slurm — see the comments there.
 set -euo pipefail
 
-PROJ=/gpfs/work5/0/prjs1904/nemo-demo
-VENV=${VENV:-/scratch-shared/jcooper/nemo-demo/venv}
+PROJ=/gpfs/work5/0/prjs1904/ilcc-deepfake
+VENV=${VENV:-/scratch-shared/jcooper/ilcc-deepfake/venv}
 export HF_HOME=$PROJ/hf
 export OUT=$PROJ/dutch
 export VLLM_DISABLE_COMPILE_CACHE=1

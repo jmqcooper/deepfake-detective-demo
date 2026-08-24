@@ -4,15 +4,15 @@
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=16
 #SBATCH --time=00:45:00
-#SBATCH --output=/gpfs/work5/0/prjs1904/nemo-demo/logs/station1-%j.out
+#SBATCH --output=/gpfs/work5/0/prjs1904/ilcc-deepfake/logs/station1-%j.out
 #
 # TTS-only pass: generate the Station 3 codec-ladder utterance
 # (see generate_station1.py). Environment quirks are copied from
 # generate_dutch.slurm — see the comments there for why each one exists.
 set -euo pipefail
 
-PROJ=/gpfs/work5/0/prjs1904/nemo-demo
-VENV=${VENV:-/scratch-shared/jcooper/nemo-demo/venv}
+PROJ=/gpfs/work5/0/prjs1904/ilcc-deepfake
+VENV=${VENV:-/scratch-shared/jcooper/ilcc-deepfake/venv}
 export HF_HOME=$PROJ/hf
 export OUT=$PROJ/dutch
 export VLLM_DISABLE_COMPILE_CACHE=1

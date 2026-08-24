@@ -1,6 +1,6 @@
-# Deepfake Detective Academy — Technical Spec
+# ilcc-deepfake — Technical Spec
 
-Interactive museum demo (NEMO et al.) teaching audio-deepfake literacy to ages 8+.
+Interactive demo teaching audio-deepfake literacy to ages 8+.
 Two AI personas: **Miko** (ASR, gullible listener) and **Agent Echo** (detective, spots fakes).
 Six stations, 10–15 minutes, Dutch-first with English toggle.
 
@@ -8,7 +8,7 @@ Six stations, 10–15 minutes, Dutch-first with English toggle.
 
 Both run the *same* Next.js app; only the stats store differs.
 
-- **Version A (museum / UvA server):** `docker compose up`. SQLite file volume. Kiosk mode.
+- **Version A (ILCC server):** `docker compose up`. SQLite file volume. Kiosk mode.
 - **Version B (personal Next.js site):** same app, `STATS_DRIVER=memory` or a hosted libSQL URL.
   If no DB is reachable the app still runs fully — stats degrade to "no data yet", never a crash.
 
@@ -22,7 +22,7 @@ to the finale; the visible progress count changes from six stations to five.
 ## Repository layout
 
 ```
-nemo-demo/
+ilcc-deepfake/
 ├── web/                      # Next.js 16 app (App Router, TS, Tailwind)
 │   ├── src/app/              # pages + API routes (events, stats, health)
 │   ├── src/lib/              # contracts and pure logic — see below

@@ -10,7 +10,7 @@ set -euo pipefail
 
 SSH=/usr/bin/ssh
 HOST="${SNELLIUS_HOST:-thesis}"
-REMOTE=/gpfs/work5/0/prjs1904/nemo-demo/dutch_pack.tar.gz
+REMOTE=/gpfs/work5/0/prjs1904/ilcc-deepfake/dutch_pack.tar.gz
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CACHE="$ROOT/tools/.cache/dutch"
@@ -18,7 +18,7 @@ CACHE="$ROOT/tools/.cache/dutch"
 if ! "$SSH" -o BatchMode=yes "$HOST" "test -f $REMOTE"; then
   echo "error: $REMOTE not found on $HOST." >&2
   echo "       Run the GPU job first:" >&2
-  echo "         ssh $HOST 'cd /gpfs/work5/0/prjs1904/nemo-demo && sbatch scripts/generate_dutch.slurm'" >&2
+  echo "         ssh $HOST 'cd /gpfs/work5/0/prjs1904/ilcc-deepfake && sbatch scripts/generate_dutch.slurm'" >&2
   exit 1
 fi
 
