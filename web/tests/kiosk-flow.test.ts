@@ -8,6 +8,8 @@ import {
   initialFlow,
   stationNumber,
   transitionTelemetry,
+  visibleStationCount,
+  visibleStationNumber,
   IDLE_MS,
   IDLE_MS_STATION_5,
   STATION_COUNT,
@@ -58,6 +60,27 @@ test("advancing walks the whole demo and stops at the last station", () => {
   }
   assert.deepEqual([...new Set(visited)], [0, 1, 2, 3, 4, 5]);
   assert.equal(state.station, STATION_COUNT - 1);
+});
+
+test("an unavailable voice service removes Station 5 from the flow", () => {
+  assert.deepEqual(
+    flowReducer(station(3), {
+      type: "advance",
+      voiceCloningAvailable: false,
+    }),
+    { phase: "station", station: 5 },
+  );
+  assert.deepEqual(
+    flowReducer(station(3), {
+      type: "advance",
+      voiceCloningAvailable: true,
+    }),
+    { phase: "briefing", station: 4 },
+  );
+  assert.equal(visibleStationCount(false), 5);
+  assert.equal(visibleStationNumber(5, false), 5);
+  assert.equal(visibleStationCount(true), 6);
+  assert.equal(visibleStationNumber(5, true), 6);
 });
 
 test("SPEC.md idle rule: 45 s on station 6, 90 s everywhere else", () => {

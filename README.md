@@ -1,122 +1,202 @@
-# De Deepfake Detective Academie
+# Deepfake Detective Academy
 
-A Dutch-first, English-enabled museum demo that teaches children and general
-audiences how speech recognition and deepfake detection differ. Visitors move
-through six short stations: sound-to-text, real-or-fake listening, compression,
-sentence building, local voice cloning, and a practical safety quiz.
+A local Dutch/English museum web app about speech recognition and fake voices.
 
-The demo takes about 12 minutes and runs on a laptop, tablet, or phone. During a
-visit, microphone audio, model inference, and statistics are handled purely
-locally on the host machine.
+## Choose what to install
 
-## Platform support
+| Part | What visitors get | Required |
+|---|---|---|
+| Web app | Stations 1–4 plus the safety finale, with the curated Dutch/English media pack | A container runtime; no Node, Python, FFmpeg, or media download |
+| Voice-cloning add-on | Adds the record-and-clone station, for six stations total | Web app, internet for first download, microphone, and about 15 GB free space |
 
-- Containers: Docker Compose v2 on macOS, Linux, or Windows, and Podman with a
-  Compose provider on Linux.
-- Native development: macOS, Linux, or Windows through WSL2.
-- Live voice cloning: Apple Silicon through MPS, NVIDIA GPUs through CUDA on
-  Linux or Windows, or CPU as a slower fallback.
+Install the web app first. Voice cloning is optional and has its own installer.
 
-## Local development
+First, [download the project ZIP](https://github.com/jmqcooper/deepfake-detective-demo/archive/refs/heads/main.zip)
+ and extract it. Every command below is run from that extracted project folder.
 
-Install [Node.js 22](https://nodejs.org/en/download),
-[Python 3.12](https://www.python.org/downloads/), and
-[FFmpeg](https://ffmpeg.org/download.html). On Windows, run these commands in
-WSL2. Then, from the repository root, run:
+> [!NOTE]
+> If the voice service is not live on port `8765`, the app removes the cloning
+> station automatically. Visitors go directly from Station 4 to the safety
+> finale, and the progress bar shows five stations.[^voice-station]
+
+## 1. Install the web app
+
+The web installer builds an isolated container, starts it, waits for its health
+check, and opens <http://localhost:3000>. Application packages are not installed
+on the host. Anonymous statistics stay in a container volume between restarts.
+
+The hand-selected Dutch and English real/fake voices are bundled under
+`web/public/samples/`. The installer includes them unchanged; there is no
+first-run media download. The optional voice-cloning models are the only large
+media/model download and are handled separately in step 2. If a repackaged copy
+of the repository omits the curated pack, the installer stops with a concrete
+error instead of silently substituting test tones.
+
+### macOS
+
+Needed: [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/), running.
+
+From the project folder, double-click `install/macos.command`. Or run:
+
+```bash
+./install/macos.command
+```
+
+If Docker Desktop is missing, the installer opens the official download page.
+Install it, start it, and run `macos.command` again.
+
+### Windows 10/11
+
+Needed: [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/), running with its default Linux-container setting.
+
+Double-click `install\windows.cmd`. The equivalent PowerShell command is:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install\windows.ps1
+```
+
+If Docker Desktop is missing, the installer opens the official download page.
+Install it, start it, and run the command again. WSL commands are not required.
+
+### Linux
+
+Needed: either Docker Engine with the Compose plugin, or Podman with a Compose
+provider. Start that service, then run from the project folder:
+
+```bash
+bash install/linux.sh
+```
+
+For installation of the one prerequisite, use the official
+[Docker Engine](https://docs.docker.com/engine/install/) or
+[Podman](https://podman.io/docs/installation) instructions for the exact Linux
+distribution. The script detects either runtime automatically.
+
+### Start, stop, and see logs
+
+Use the same OS script with one of these actions:
+
+| Action | macOS | Windows | Linux |
+|---|---|---|---|
+| Start/update | `./install/macos.command` | `.\install\windows.cmd` | `bash install/linux.sh` |
+| Stop | `./install/macos.command stop` | `.\install\windows.cmd stop` | `bash install/linux.sh stop` |
+| Logs | `./install/macos.command logs` | `.\install\windows.cmd logs` | `bash install/linux.sh logs` |
+
+Stopping does not delete statistics. To remove the app and its stored statistics,
+run `docker compose down -v` (or `podman compose down -v`). The `-v` deletion is
+permanent.
+
+## 2. Add voice cloning (optional)
+
+The voice service runs natively so it can use Apple MPS or NVIDIA CUDA. Its
+installer downloads a private Python 3.12 runtime and creates `.venv-voice/`.
+Python packages and model caches stay inside this checkout under `.venv-voice/`
+and `.runtime/`; shell profiles and system Python packages are not changed.
+
+The supported device order is:
+
+1. NVIDIA CUDA on Linux or Windows.
+2. Apple MPS on Apple Silicon.
+3. CPU fallback on any supported OS; one clone can take several minutes.
+
+Keep the web app running, then start the matching voice installer.
+
+### macOS voice add-on
+
+```bash
+./install/voice-macos.command
+```
+
+### Windows voice add-on
+
+Double-click `install\voice-windows.cmd`, or run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install\voice-windows.ps1
+```
+
+### Linux voice add-on
+
+```bash
+bash install/voice-linux.sh
+```
+
+Keep that terminal window open. The first install downloads the Python and ML
+packages. The first visit to Station 4 downloads and loads the pinned models;
+wait for the voice terminal to report that the models are ready. Reload the web
+page if the visit was already in progress. Press `Ctrl+C` in the voice terminal
+to stop it. The web app detects that within ten seconds and removes the cloning
+station for the next visitor.
+
+The service uses port `8765`. The web container authenticates with the random
+token created in the gitignored `.env` file. Do not expose port `8765` through a
+router or public firewall.
+
+For GPU overrides, on-demand Linux `systemd` operation, health commands, and a
+real cloning deployment test, see
+[Local voice cloning](docs/LOCAL_VOICE_CLONING.md).
+
+## What is isolated
+
+```text
+Web app dependencies     container image
+Visitor statistics       named container volume
+Voice Python             .runtime/python/
+Voice Python packages    .venv-voice/
+Voice model cache        .runtime/huggingface/
+Installer cache          .runtime/uv-cache/
+Private shared token     .env (gitignored)
+```
+
+Deleting `.runtime/` and `.venv-voice/` removes the optional voice environment.
+Do this only while the voice service is stopped; the folders can be recreated by
+running the voice installer again.
+
+## Developers and media builders
+
+The installers above are for running the demo. Contributors who want native hot
+reload can install Node.js 22, Python 3.12, and FFmpeg, then run:
 
 ```bash
 make dev
 ```
 
-This installs dependencies, creates a synthetic development audio pack, and
-starts the Next.js app at <http://localhost:3000>. The fixture contains tones and
-silence; exhibition-quality media is generated separately. See
-[tools/README.md](tools/README.md) for the media pipeline.
-
-Live voice cloning is optional during development. Start its local, on-demand
-model service separately by following
-[docs/LOCAL_VOICE_CLONING.md](docs/LOCAL_VOICE_CLONING.md); otherwise Station 5
-shows an unavailable message and can be skipped.
-
-## Checks
+This creates the normal local `.venv/`, installs web dependencies under
+`web/node_modules/`, uses the bundled curated media pack, and opens the Next.js
+development server at <http://localhost:3000>. Run all checks with:
 
 ```bash
 make check
 ```
 
-This verifies the runtime and script syntax, runs the Python and web tests, lint,
-typecheck, production build, sample-pack validation, and API end-to-end tests.
+The synthetic tones-and-silence fixture remains available for pipeline and
+container testing. See [Media pipeline](tools/README.md) to rebuild either pack.
 
-## Docker or Podman Compose
-
-From a fresh clone, this starts the web demo:
-
-```bash
-git clone https://github.com/jmqcooper/deepfake-detective-demo.git
-cd deepfake-detective-demo
-docker compose up -d --build
-```
-
-On a Podman host, use the same Compose file:
-
-```bash
-podman compose up -d --build
-```
-
-Open <http://localhost:3000>. The container includes a synthetic audio fixture
-when no exhibition pack is present and persists statistics in a named volume.
-The first build needs internet access to download build dependencies; after it is
-built, the application and all visit data stay local. Use
-`docker compose logs -f web` for logs and `docker compose down` to stop it.
-
-Yes, `docker compose up -d --build` automatically builds and starts the web demo
-on macOS, Linux, and Windows. It deliberately does not put the large voice models
-inside Docker, because doing so would hide Apple MPS and complicate host GPU
-support. The web demo still works without them; to enable live cloning, run the
-separate local service documented in
-[docs/LOCAL_VOICE_CLONING.md](docs/LOCAL_VOICE_CLONING.md). That guide includes
-one-time setup, on-demand systemd socket activation, normal restart, and
-health-check commands for macOS/Linux and Windows. The web app wakes the models
-one mission before they are needed. After ten idle minutes, the worker releases
-the models or exits completely when socket activation is enabled. Server
-deployments use a shared internal bearer token between the web container and
-the worker, while local development remains token-free.
-
-The resulting local layout is: browser → Podman/Docker web app → native voice
-service. The container reaches the service through `host.docker.internal`; no
-hosted inference service is involved.
-
-## Project layout
+## Project map
 
 ```text
-web/src/app/           Next.js pages and API routes
-web/src/components/    Kiosk shell and station interfaces
-web/src/i18n/          Dutch and English copy
-web/src/lib/           Shared contracts and tested logic
-web/tests/             Unit and API tests
-tools/                 Offline media pipeline and local model service
-ops/                   Kiosk and maintenance scripts
-SPEC.md                API, data, and manifest contracts
+install/                one-click OS launchers
+web/src/app/            Next.js pages and API routes
+web/src/components/     kiosk shell and station interfaces
+web/src/i18n/           Dutch and English copy
+web/src/lib/            shared contracts and tested logic
+tools/                  media pipeline and native voice service
+ops/                    museum deployment and maintenance
 ```
 
-`web/public/samples/` is generated and gitignored. The research-media pipeline
-is optional for development and described in [tools/README.md](tools/README.md).
+Operational documentation:
 
-## Licensing
+- [Local voice cloning](docs/LOCAL_VOICE_CLONING.md)
+- [Museum operations](docs/MUSEUM_OPERATIONS.md)
+- [Technical specification](SPEC.md)
+- [Contributing](CONTRIBUTING.md)
 
-- Code: Apache-2.0; see [LICENSE](LICENSE).
-- Real speech: Common Voice (CC0), with Multilingual LibriSpeech (CC BY 4.0)
-  available as a fallback source.
-- Generated Voxtral TTS media: CC BY-NC 4.0.
-- Voxtral ASR transcripts: Apache-2.0.
-- Chatterbox Multilingual V3 voice cloning: MIT.
-- DF Arena 500M clone detection: custom non-commercial licence.
+Licences and model/media attribution are in [NOTICE](NOTICE). Repository code is
+Apache-2.0; some generated media and model weights have additional or
+non-commercial terms.
 
-See [NOTICE](NOTICE) for complete attribution and licence details.
-
-## Documentation
-
-- [CONTRIBUTING.md](CONTRIBUTING.md) — contribution workflow and required checks.
-- [SPEC.md](SPEC.md) — application and media contracts.
-- [tools/README.md](tools/README.md) — sample generation and validation.
-- [Museum operations](docs/MUSEUM_OPERATIONS.md) — kiosk setup, recovery, and maintenance.
+[^voice-station]: This is also enforced in
+    `web/src/components/kiosk/DemoShell.tsx` and
+    `web/src/lib/kiosk-flow.ts`: the browser polls the voice-service health
+    endpoint, and an unavailable service makes the Station 4 transition skip the
+    cloning station. The service being absent does not break the rest of the app.

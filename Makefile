@@ -11,7 +11,7 @@ VENV_DEPS := .venv/.deps
 STAMP := web/public/samples/.dev-fixture
 SAMPLE_SOURCES := tools/make_synthetic_dutch_fixture.py tools/prepare_samples.py
 PYTHON_SOURCES := $(shell git ls-files ':(glob)tools/**/*.py')
-SHELL_SOURCES := $(shell git ls-files ':(glob)tools/**/*.sh' ':(glob)ops/**/*.sh')
+SHELL_SOURCES := $(shell git ls-files ':(glob)tools/**/*.sh' ':(glob)ops/**/*.sh' ':(glob)install/**/*.sh' ':(glob)install/**/*.command')
 NODE_SOURCES := $(shell git ls-files ':(glob)tools/**/*.mjs' ':(glob)ops/**/*.mjs')
 
 install: web/node_modules $(VENV_DEPS)

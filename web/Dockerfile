@@ -8,11 +8,14 @@ RUN apt-get update \
 COPY tools/make_synthetic_dutch_fixture.py tools/prepare_samples.py ./tools/
 COPY web/public/samples/ /provided/
 RUN mkdir -p /out \
-    && if [ "$FORCE_SYNTHETIC_SAMPLES" = "1" ] || [ ! -f /provided/manifest.json ]; then \
+    && if [ "$FORCE_SYNTHETIC_SAMPLES" = "1" ]; then \
       python tools/make_synthetic_dutch_fixture.py --out /tmp/fixture \
       && python tools/prepare_samples.py --cache /tmp/fixture --out /out; \
-    else \
+    elif [ -f /provided/manifest.json ]; then \
       cp -a /provided/. /out/; \
+    else \
+      echo "error: bundled sample pack is missing (web/public/samples/manifest.json)" >&2 \
+      && exit 1; \
     fi \
     && python tools/prepare_samples.py --out /out --verify-only
 

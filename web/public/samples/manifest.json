@@ -1,0 +1,805 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-14T01:59:58Z",
+  "source": "Common Voice 17 (Dutch + English) [CC0] (real) + mistralai/Voxtral-4B-TTS-2603 [CC BY-NC 4.0] (synthetic; model revision unrecorded in this legacy build)",
+  "clips": [
+    {
+      "id": "station1",
+      "label": "fake",
+      "lang": "nl",
+      "audio": "/samples/audio/station1.mp3",
+      "durationSec": 3.76,
+      "difficulty": 1,
+      "transcript": "Oi, Mikkel. Kun jij horen wat ik zeg? Let maar eens goed op.",
+      "spectrogram": {
+        "image": "/samples/spec/station1.png",
+        "bins": 64,
+        "frames": 235,
+        "maxFreqHz": 8000
+      },
+      "clue": null,
+      "provenance": {
+        "sourceId": "station1-tts",
+        "attack": "mistralai/Voxtral-4B-TTS-2603",
+        "codec": null
+      }
+    },
+    {
+      "id": "station1-en",
+      "label": "fake",
+      "lang": "en",
+      "audio": "/samples/audio/station1-en.mp3",
+      "durationSec": 5.22,
+      "difficulty": 1,
+      "transcript": "Hi Miko! Can you hear what I'm saying? Pay close attention!",
+      "spectrogram": {
+        "image": "/samples/spec/station1-en.png",
+        "bins": 64,
+        "frames": 327,
+        "maxFreqHz": 8000
+      },
+      "clue": null,
+      "provenance": {
+        "sourceId": "station1-en-tts",
+        "attack": "mistralai/Voxtral-4B-TTS-2603",
+        "codec": null
+      }
+    },
+    {
+      "id": "case-01",
+      "label": "real",
+      "lang": "nl",
+      "audio": "/samples/audio/case-01.mp3",
+      "durationSec": 4.0,
+      "difficulty": 1,
+      "transcript": "Het knikkende knie liep ik het rondoor binnen.",
+      "spectrogram": {
+        "image": "/samples/spec/case-01.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": null,
+      "provenance": {
+        "sourceId": "nl2-r01",
+        "attack": null,
+        "codec": null
+      }
+    },
+    {
+      "id": "case-02",
+      "label": "fake",
+      "lang": "nl",
+      "audio": "/samples/audio/case-02.mp3",
+      "durationSec": 4.0,
+      "difficulty": 1,
+      "transcript": "Er is duidelijkheid nodig over de rechten van slachtoffers en doorzicht.",
+      "spectrogram": {
+        "image": "/samples/spec/case-02.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": {
+        "key": "clue.tier1",
+        "box": [
+          0.0717,
+          0.25,
+          0.239,
+          0.65
+        ]
+      },
+      "provenance": {
+        "sourceId": "nl2-f05",
+        "attack": "mistralai/Voxtral-4B-TTS-2603",
+        "codec": null
+      }
+    },
+    {
+      "id": "case-03",
+      "label": "real",
+      "lang": "nl",
+      "audio": "/samples/audio/case-03.mp3",
+      "durationSec": 4.0,
+      "difficulty": 2,
+      "transcript": "Siekinas zoekt naar nieuwe verpleegsters.",
+      "spectrogram": {
+        "image": "/samples/spec/case-03.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": null,
+      "provenance": {
+        "sourceId": "nl2-r04",
+        "attack": null,
+        "codec": null
+      }
+    },
+    {
+      "id": "case-04",
+      "label": "fake",
+      "lang": "nl",
+      "audio": "/samples/audio/case-04.mp3",
+      "durationSec": 4.0,
+      "difficulty": 2,
+      "transcript": "Juni dit jaar is veel te laat.",
+      "spectrogram": {
+        "image": "/samples/spec/case-04.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": {
+        "key": "clue.tier2",
+        "box": [
+          0.6813,
+          0.1,
+          0.2191,
+          0.78
+        ]
+      },
+      "provenance": {
+        "sourceId": "nl2-f03",
+        "attack": "mistralai/Voxtral-4B-TTS-2603",
+        "codec": null
+      }
+    },
+    {
+      "id": "case-05",
+      "label": "real",
+      "lang": "nl",
+      "audio": "/samples/audio/case-05.mp3",
+      "durationSec": 4.0,
+      "difficulty": 3,
+      "transcript": "In Operate Momento and in BMW, waar hij gaat binnenkort een Tesla model",
+      "spectrogram": {
+        "image": "/samples/spec/case-05.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": null,
+      "provenance": {
+        "sourceId": "nl2-r06",
+        "attack": null,
+        "codec": null
+      }
+    },
+    {
+      "id": "case-06",
+      "label": "fake",
+      "lang": "nl",
+      "audio": "/samples/audio/case-06.mp3",
+      "durationSec": 4.0,
+      "difficulty": 3,
+      "transcript": "Ik maak er ernstig bezwaar tegen wanneer men een volk tracht te demoniseren.",
+      "spectrogram": {
+        "image": "/samples/spec/case-06.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": {
+        "key": "clue.tier3",
+        "box": [
+          0.1076,
+          0.25,
+          0.239,
+          0.65
+        ]
+      },
+      "provenance": {
+        "sourceId": "nl2-f02",
+        "attack": "mistralai/Voxtral-4B-TTS-2603",
+        "codec": null
+      }
+    },
+    {
+      "id": "case-07",
+      "label": "real",
+      "lang": "nl",
+      "audio": "/samples/audio/case-07.mp3",
+      "durationSec": 4.0,
+      "difficulty": 4,
+      "transcript": "In deze pil twee keer per dag, één in de ochtend en één in de avond.",
+      "spectrogram": {
+        "image": "/samples/spec/case-07.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": null,
+      "provenance": {
+        "sourceId": "nl2-r09",
+        "attack": null,
+        "codec": null
+      }
+    },
+    {
+      "id": "case-08",
+      "label": "fake",
+      "lang": "nl",
+      "audio": "/samples/audio/case-08.mp3",
+      "durationSec": 4.0,
+      "difficulty": 4,
+      "transcript": "Waar laat jij je onderhoud doen?",
+      "spectrogram": {
+        "image": "/samples/spec/case-08.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": {
+        "key": "clue.tier4",
+        "box": [
+          0.761,
+          0.1,
+          0.2191,
+          0.78
+        ]
+      },
+      "provenance": {
+        "sourceId": "nl2-f01",
+        "attack": "mistralai/Voxtral-4B-TTS-2603",
+        "codec": null
+      }
+    },
+    {
+      "id": "case-09",
+      "label": "real",
+      "lang": "nl",
+      "audio": "/samples/audio/case-09.mp3",
+      "durationSec": 4.0,
+      "difficulty": 5,
+      "transcript": "Mika rennen rond in de tuin.",
+      "spectrogram": {
+        "image": "/samples/spec/case-09.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": null,
+      "provenance": {
+        "sourceId": "nl2-r11",
+        "attack": null,
+        "codec": null
+      }
+    },
+    {
+      "id": "case-10",
+      "label": "fake",
+      "lang": "nl",
+      "audio": "/samples/audio/case-10.mp3",
+      "durationSec": 4.0,
+      "difficulty": 5,
+      "transcript": "Deze top heeft niet in alle opzichten aan de verwachtingen voldaan.",
+      "spectrogram": {
+        "image": "/samples/spec/case-10.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": {
+        "key": "clue.tier5",
+        "box": [
+          0.7809,
+          0.1,
+          0.2191,
+          0.78
+        ]
+      },
+      "provenance": {
+        "sourceId": "nl2-f00",
+        "attack": "mistralai/Voxtral-4B-TTS-2603",
+        "codec": null
+      }
+    },
+    {
+      "id": "case-en-01",
+      "label": "real",
+      "lang": "en",
+      "audio": "/samples/audio/case-en-01.mp3",
+      "durationSec": 4.0,
+      "difficulty": 1,
+      "transcript": "A friend to everybody is a friend to nobody.",
+      "spectrogram": {
+        "image": "/samples/spec/case-en-01.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": null,
+      "provenance": {
+        "sourceId": "en2-r00",
+        "attack": null,
+        "codec": null
+      }
+    },
+    {
+      "id": "case-en-02",
+      "label": "fake",
+      "lang": "en",
+      "audio": "/samples/audio/case-en-02.mp3",
+      "durationSec": 4.0,
+      "difficulty": 1,
+      "transcript": "The wind told me that you know about love, the boy said.",
+      "spectrogram": {
+        "image": "/samples/spec/case-en-02.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": {
+        "key": "clue.tier1",
+        "box": [
+          0.4582,
+          0.25,
+          0.239,
+          0.65
+        ]
+      },
+      "provenance": {
+        "sourceId": "en2-f04",
+        "attack": "mistralai/Voxtral-4B-TTS-2603",
+        "codec": null
+      }
+    },
+    {
+      "id": "case-en-03",
+      "label": "real",
+      "lang": "en",
+      "audio": "/samples/audio/case-en-03.mp3",
+      "durationSec": 4.0,
+      "difficulty": 2,
+      "transcript": "I know why I want to get back to my flock, he thought.",
+      "spectrogram": {
+        "image": "/samples/spec/case-en-03.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": null,
+      "provenance": {
+        "sourceId": "en2-r01",
+        "attack": null,
+        "codec": null
+      }
+    },
+    {
+      "id": "case-en-04",
+      "label": "fake",
+      "lang": "en",
+      "audio": "/samples/audio/case-en-04.mp3",
+      "durationSec": 4.0,
+      "difficulty": 2,
+      "transcript": "Religious festivals include the Muslim Eids and the Christian",
+      "spectrogram": {
+        "image": "/samples/spec/case-en-04.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": {
+        "key": "clue.tier2",
+        "box": [
+          0.6773,
+          0.1,
+          0.2191,
+          0.78
+        ]
+      },
+      "provenance": {
+        "sourceId": "en2-f03",
+        "attack": "mistralai/Voxtral-4B-TTS-2603",
+        "codec": null
+      }
+    },
+    {
+      "id": "case-en-05",
+      "label": "real",
+      "lang": "en",
+      "audio": "/samples/audio/case-en-05.mp3",
+      "durationSec": 4.0,
+      "difficulty": 3,
+      "transcript": "About once more roundabout.",
+      "spectrogram": {
+        "image": "/samples/spec/case-en-05.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": null,
+      "provenance": {
+        "sourceId": "en2-r05",
+        "attack": null,
+        "codec": null
+      }
+    },
+    {
+      "id": "case-en-06",
+      "label": "fake",
+      "lang": "en",
+      "audio": "/samples/audio/case-en-06.mp3",
+      "durationSec": 4.0,
+      "difficulty": 3,
+      "transcript": "That would be funny if he did.",
+      "spectrogram": {
+        "image": "/samples/spec/case-en-06.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": {
+        "key": "clue.tier3",
+        "box": [
+          0.1514,
+          0.25,
+          0.239,
+          0.65
+        ]
+      },
+      "provenance": {
+        "sourceId": "en2-f02",
+        "attack": "mistralai/Voxtral-4B-TTS-2603",
+        "codec": null
+      }
+    },
+    {
+      "id": "case-en-07",
+      "label": "real",
+      "lang": "en",
+      "audio": "/samples/audio/case-en-07.mp3",
+      "durationSec": 4.0,
+      "difficulty": 4,
+      "transcript": "I pointed out Mars, a bright dot of light.",
+      "spectrogram": {
+        "image": "/samples/spec/case-en-07.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": null,
+      "provenance": {
+        "sourceId": "en2-r07",
+        "attack": null,
+        "codec": null
+      }
+    },
+    {
+      "id": "case-en-08",
+      "label": "fake",
+      "lang": "en",
+      "audio": "/samples/audio/case-en-08.mp3",
+      "durationSec": 4.0,
+      "difficulty": 4,
+      "transcript": "I guess it's a never-ending story.",
+      "spectrogram": {
+        "image": "/samples/spec/case-en-08.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": {
+        "key": "clue.tier4",
+        "box": [
+          0.7769,
+          0.1,
+          0.2191,
+          0.78
+        ]
+      },
+      "provenance": {
+        "sourceId": "en2-f01",
+        "attack": "mistralai/Voxtral-4B-TTS-2603",
+        "codec": null
+      }
+    },
+    {
+      "id": "case-en-09",
+      "label": "real",
+      "lang": "en",
+      "audio": "/samples/audio/case-en-09.mp3",
+      "durationSec": 4.0,
+      "difficulty": 5,
+      "transcript": "The owner of the dwelling was not amused.",
+      "spectrogram": {
+        "image": "/samples/spec/case-en-09.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": null,
+      "provenance": {
+        "sourceId": "en2-r09",
+        "attack": null,
+        "codec": null
+      }
+    },
+    {
+      "id": "case-en-10",
+      "label": "fake",
+      "lang": "en",
+      "audio": "/samples/audio/case-en-10.mp3",
+      "durationSec": 4.0,
+      "difficulty": 5,
+      "transcript": "I will tell her what we decided.",
+      "spectrogram": {
+        "image": "/samples/spec/case-en-10.png",
+        "bins": 64,
+        "frames": 251,
+        "maxFreqHz": 8000
+      },
+      "clue": {
+        "key": "clue.tier5",
+        "box": [
+          0.7809,
+          0.1,
+          0.2191,
+          0.78
+        ]
+      },
+      "provenance": {
+        "sourceId": "en2-f00",
+        "attack": "mistralai/Voxtral-4B-TTS-2603",
+        "codec": null
+      }
+    }
+  ],
+  "codecLadder": [
+    {
+      "id": "studio",
+      "labelKey": "codec.studio",
+      "audio": "/samples/codec/studio.mp3",
+      "spectrogram": "/samples/codec/studio.png",
+      "bitrateKbps": null,
+      "transcript": "Hallo, kom je vanmiddag naar het museum? Dan laat ik je iets geheims zien.",
+      "audioEn": "/samples/codec/studio_en.mp3",
+      "spectrogramEn": "/samples/codec/studio_en.png",
+      "transcriptEn": "Hello! Are you coming to the museum this afternoon? I'll show you something secret."
+    },
+    {
+      "id": "phone",
+      "labelKey": "codec.phone",
+      "audio": "/samples/codec/phone.mp3",
+      "spectrogram": "/samples/codec/phone.png",
+      "bitrateKbps": 24,
+      "transcript": "Hallo, kom je vanmiddag naar het museum, dan laat ik je iets geheims zien.",
+      "audioEn": "/samples/codec/phone_en.mp3",
+      "spectrogramEn": "/samples/codec/phone_en.png",
+      "transcriptEn": "Hello! Are you coming to the museum this afternoon? I'll show you something secret."
+    },
+    {
+      "id": "whatsapp",
+      "labelKey": "codec.whatsapp",
+      "audio": "/samples/codec/whatsapp.mp3",
+      "spectrogram": "/samples/codec/whatsapp.png",
+      "bitrateKbps": 12,
+      "transcript": "Hallo, kom je vanmiddag naar het museum, dan laat ik je iets geheims zien.",
+      "audioEn": "/samples/codec/whatsapp_en.mp3",
+      "spectrogramEn": "/samples/codec/whatsapp_en.png",
+      "transcriptEn": "Hello! Are you coming to the museum this afternoon? I'll show you something secret."
+    },
+    {
+      "id": "terrible",
+      "labelKey": "codec.terrible",
+      "audio": "/samples/codec/terrible.mp3",
+      "spectrogram": "/samples/codec/terrible.png",
+      "bitrateKbps": 6,
+      "transcript": "Hallo, kom je vanmiddag naar het museum, dan laat ik je iets geheims zien.",
+      "audioEn": "/samples/codec/terrible_en.mp3",
+      "spectrogramEn": "/samples/codec/terrible_en.png",
+      "transcriptEn": "Hello! Are you coming to the museum this afternoon? I'll show you something secret."
+    }
+  ],
+  "fakeFactory": {
+    "available": true,
+    "model": "mistralai/Voxtral-4B-TTS-2603",
+    "sentences": [
+      {
+        "id": "s1",
+        "text": "Hoi! Ik heb je huiswerk opgegeten. Sorry daarvoor.",
+        "scam": false
+      },
+      {
+        "id": "s2",
+        "text": "Ik sta voor de school. Kom je naar buiten?",
+        "scam": false
+      },
+      {
+        "id": "s3",
+        "text": "Mam, ik ben mijn telefoon kwijt. Kun je twintig euro overmaken?",
+        "scam": true
+      },
+      {
+        "id": "s4",
+        "text": "Vergeet niet je jas mee te nemen, het gaat regenen.",
+        "scam": false
+      }
+    ],
+    "voices": [
+      "nl_female",
+      "nl_male",
+      "neutral_female",
+      "neutral_male"
+    ],
+    "clips": [
+      {
+        "id": "s1_nl_female",
+        "sentenceId": "s1",
+        "voice": "nl_female",
+        "lang": "nl",
+        "text": "Hoi! Ik heb je huiswerk opgegeten. Sorry daarvoor.",
+        "scam": false,
+        "audio": "/samples/factory/s1_nl_female.mp3",
+        "spectrogram": "/samples/factory/s1_nl_female.png",
+        "transcript": "Hoi, ik heb je huiswerk opgegeten. Sorry daarvoor."
+      },
+      {
+        "id": "s1_nl_male",
+        "sentenceId": "s1",
+        "voice": "nl_male",
+        "lang": "nl",
+        "text": "Hoi! Ik heb je huiswerk opgegeten. Sorry daarvoor.",
+        "scam": false,
+        "audio": "/samples/factory/s1_nl_male.mp3",
+        "spectrogram": "/samples/factory/s1_nl_male.png",
+        "transcript": "Hoi, ik heb je huiswerk opgegeten. Sorry daarvoor."
+      },
+      {
+        "id": "s2_nl_female",
+        "sentenceId": "s2",
+        "voice": "nl_female",
+        "lang": "nl",
+        "text": "Ik sta voor de school. Kom je naar buiten?",
+        "scam": false,
+        "audio": "/samples/factory/s2_nl_female.mp3",
+        "spectrogram": "/samples/factory/s2_nl_female.png",
+        "transcript": "Ik sta voor de school. Kom je naar buiten?"
+      },
+      {
+        "id": "s2_nl_male",
+        "sentenceId": "s2",
+        "voice": "nl_male",
+        "lang": "nl",
+        "text": "Ik sta voor de school. Kom je naar buiten?",
+        "scam": false,
+        "audio": "/samples/factory/s2_nl_male.mp3",
+        "spectrogram": "/samples/factory/s2_nl_male.png",
+        "transcript": "Ik sta voor de school. Kom je naar buiten?"
+      },
+      {
+        "id": "s3_nl_female",
+        "sentenceId": "s3",
+        "voice": "nl_female",
+        "lang": "nl",
+        "text": "Mam, ik ben mijn telefoon kwijt. Kun je twintig euro overmaken?",
+        "scam": true,
+        "audio": "/samples/factory/s3_nl_female.mp3",
+        "spectrogram": "/samples/factory/s3_nl_female.png",
+        "transcript": "Mam, ik ben mijn telefoon kwijt. Kun je 20 euro overmaken?"
+      },
+      {
+        "id": "s3_nl_male",
+        "sentenceId": "s3",
+        "voice": "nl_male",
+        "lang": "nl",
+        "text": "Mam, ik ben mijn telefoon kwijt. Kun je twintig euro overmaken?",
+        "scam": true,
+        "audio": "/samples/factory/s3_nl_male.mp3",
+        "spectrogram": "/samples/factory/s3_nl_male.png",
+        "transcript": "Mam, ik ben mijn telefoon kwijt. Kun je twintig euro overmaken?"
+      },
+      {
+        "id": "s4_nl_female",
+        "sentenceId": "s4",
+        "voice": "nl_female",
+        "lang": "nl",
+        "text": "Vergeet niet je jas mee te nemen, het gaat regenen.",
+        "scam": false,
+        "audio": "/samples/factory/s4_nl_female.mp3",
+        "spectrogram": "/samples/factory/s4_nl_female.png",
+        "transcript": "Vergeet niet je jas mee te nemen. Het gaat regenen."
+      },
+      {
+        "id": "s4_nl_male",
+        "sentenceId": "s4",
+        "voice": "nl_male",
+        "lang": "nl",
+        "text": "Vergeet niet je jas mee te nemen, het gaat regenen.",
+        "scam": false,
+        "audio": "/samples/factory/s4_nl_male.mp3",
+        "spectrogram": "/samples/factory/s4_nl_male.png",
+        "transcript": "Vergeet niet je jas mee te nemen. Het gaat regenen."
+      },
+      {
+        "id": "s1_neutral_female_en",
+        "sentenceId": "s1",
+        "voice": "neutral_female",
+        "lang": "en",
+        "text": "Hi! I ate your homework. Sorry about that.",
+        "scam": false,
+        "audio": "/samples/factory/s1_neutral_female_en.mp3",
+        "spectrogram": "/samples/factory/s1_neutral_female_en.png",
+        "transcript": "I, I ate your homework. Sorry about that."
+      },
+      {
+        "id": "s1_neutral_male_en",
+        "sentenceId": "s1",
+        "voice": "neutral_male",
+        "lang": "en",
+        "text": "Hi! I ate your homework. Sorry about that.",
+        "scam": false,
+        "audio": "/samples/factory/s1_neutral_male_en.mp3",
+        "spectrogram": "/samples/factory/s1_neutral_male_en.png",
+        "transcript": "Hi, I ate your homework. Sorry about that."
+      },
+      {
+        "id": "s2_neutral_female_en",
+        "sentenceId": "s2",
+        "voice": "neutral_female",
+        "lang": "en",
+        "text": "I'm outside the school. Are you coming out?",
+        "scam": false,
+        "audio": "/samples/factory/s2_neutral_female_en.mp3",
+        "spectrogram": "/samples/factory/s2_neutral_female_en.png",
+        "transcript": "I'm outside the school are you coming out"
+      },
+      {
+        "id": "s2_neutral_male_en",
+        "sentenceId": "s2",
+        "voice": "neutral_male",
+        "lang": "en",
+        "text": "I'm outside the school. Are you coming out?",
+        "scam": false,
+        "audio": "/samples/factory/s2_neutral_male_en.mp3",
+        "spectrogram": "/samples/factory/s2_neutral_male_en.png",
+        "transcript": "I'm outside the school. Are you coming out?"
+      },
+      {
+        "id": "s3_neutral_female_en",
+        "sentenceId": "s3",
+        "voice": "neutral_female",
+        "lang": "en",
+        "text": "Mum, I lost my phone. Can you transfer twenty euros?",
+        "scam": true,
+        "audio": "/samples/factory/s3_neutral_female_en.mp3",
+        "spectrogram": "/samples/factory/s3_neutral_female_en.png",
+        "transcript": "Mom, I lost my phone. Can you transfer 20 euros?"
+      },
+      {
+        "id": "s3_neutral_male_en",
+        "sentenceId": "s3",
+        "voice": "neutral_male",
+        "lang": "en",
+        "text": "Mum, I lost my phone. Can you transfer twenty euros?",
+        "scam": true,
+        "audio": "/samples/factory/s3_neutral_male_en.mp3",
+        "spectrogram": "/samples/factory/s3_neutral_male_en.png",
+        "transcript": "Mom, I lost my phone. Can you transfer 20 euros?"
+      },
+      {
+        "id": "s4_neutral_female_en",
+        "sentenceId": "s4",
+        "voice": "neutral_female",
+        "lang": "en",
+        "text": "Don't forget your coat, it's going to rain.",
+        "scam": false,
+        "audio": "/samples/factory/s4_neutral_female_en.mp3",
+        "spectrogram": "/samples/factory/s4_neutral_female_en.png",
+        "transcript": "Don't forget your coat. It's going to rain."
+      },
+      {
+        "id": "s4_neutral_male_en",
+        "sentenceId": "s4",
+        "voice": "neutral_male",
+        "lang": "en",
+        "text": "Don't forget your coat, it's going to rain.",
+        "scam": false,
+        "audio": "/samples/factory/s4_neutral_male_en.mp3",
+        "spectrogram": "/samples/factory/s4_neutral_male_en.png",
+        "transcript": "Don't forget your coat. It's going to rain."
+      }
+    ]
+  }
+}
