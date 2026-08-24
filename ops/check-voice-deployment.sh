@@ -38,11 +38,17 @@ curl --fail --silent --show-error --max-time 35 \
   -X POST "$app_url/api/voice-clone/wake" >/dev/null
 
 deadline=$((SECONDS + ready_timeout))
+voice_health=""
 while [ "$SECONDS" -lt "$deadline" ]; do
-  voice_health="$(
+  if ! voice_health="$(
     curl --fail --silent --show-error --max-time 10 \
       "$app_url/api/voice-clone/health"
-  )"
+  )"; then
+    # Socket activation and a worker restart can briefly reset a connection.
+    # Keep polling within the same bounded readiness deadline.
+    sleep 2
+    continue
+  fi
   case "$voice_health" in
     *'"ready":true'*)
       echo "Voice models are ready: $voice_health"

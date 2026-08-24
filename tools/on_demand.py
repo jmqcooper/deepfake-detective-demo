@@ -118,8 +118,7 @@ class OnDemandResource(Generic[Resource]):
                 resource = self._resource
                 self._resource = None
             if resource is not None:
-                self._releaser(resource)
-                return True
+                return self._release(resource)
         return False
 
     def release_now(self) -> bool:
@@ -129,9 +128,20 @@ class OnDemandResource(Generic[Resource]):
                 resource = self._resource
                 self._resource = None
             if resource is not None:
-                self._releaser(resource)
-                return True
+                return self._release(resource)
         return False
+
+    def _release(self, resource: Resource) -> bool:
+        """Run best-effort cleanup without killing the lifecycle monitor."""
+        try:
+            self._releaser(resource)
+        except Exception as exc:
+            with self._state_lock:
+                self._error = f"release:{type(exc).__name__}"
+            return False
+        with self._state_lock:
+            self._error = None
+        return True
 
     def empty_and_idle(self) -> bool:
         """Return whether an unloaded/failed resource has also gone idle."""

@@ -103,6 +103,63 @@ class OnDemandResourceTests(unittest.TestCase):
         self.assertTrue(wait_for(manager, lambda status: status.ready).ready)
         self.assertEqual(attempts, 2)
 
+    def test_resource_can_reload_after_idle_release(self) -> None:
+        clock = Clock()
+        loads: list[object] = []
+        releases: list[object] = []
+
+        def load() -> object:
+            resource = object()
+            loads.append(resource)
+            return resource
+
+        manager = OnDemandResource(
+            load,
+            releases.append,
+            idle_seconds=10,
+            monotonic=clock,
+        )
+
+        manager.wake()
+        self.assertTrue(wait_for(manager, lambda status: status.ready).ready)
+        first = loads[0]
+        clock.now = 10
+        self.assertTrue(manager.release_if_idle())
+        self.assertEqual(releases, [first])
+
+        manager.wake()
+        self.assertTrue(wait_for(manager, lambda status: status.ready).ready)
+        self.assertEqual(len(loads), 2)
+        self.assertIsNot(loads[1], first)
+        self.assertIsNone(manager.status().error)
+
+    def test_release_error_is_reported_and_does_not_kill_reloading(self) -> None:
+        clock = Clock()
+        release_attempts = 0
+
+        def release(_: object) -> None:
+            nonlocal release_attempts
+            release_attempts += 1
+            if release_attempts == 1:
+                raise RuntimeError("accelerator cleanup failed")
+
+        manager = OnDemandResource(
+            object,
+            release,
+            idle_seconds=10,
+            monotonic=clock,
+        )
+        manager.wake()
+        self.assertTrue(wait_for(manager, lambda status: status.ready).ready)
+
+        clock.now = 10
+        self.assertFalse(manager.release_if_idle())
+        self.assertEqual(manager.status().error, "release:RuntimeError")
+
+        manager.wake()
+        self.assertTrue(wait_for(manager, lambda status: status.ready).ready)
+        self.assertIsNone(manager.status().error)
+
     def test_use_before_load_raises(self) -> None:
         clock = Clock()
         manager = OnDemandResource(
