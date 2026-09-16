@@ -2,7 +2,8 @@
   "app": {
     "title": "ilcc-deepfake",
     "hook": "AI kan steeds meer. Ook praten met een stem die jij vertrouwt.",
-    "start": "Start de training"
+    "start": "Start de training",
+    "credit": "Deze demo is onderdeel van het Indeep project"
   },
   "common": {
     "listen": "Luister",

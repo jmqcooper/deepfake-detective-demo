@@ -335,6 +335,22 @@ export function DemoShell() {
           />
         )}
       </div>
+
+      {/* Funder credit, attract screen only. A visitor mid-mission should never
+          be offered a way out of the demo, but the idle start screen is exactly
+          where someone reading the exhibit can follow it up. */}
+      {flow.phase === "attract" && (
+        <footer className="text-center">
+          <a
+            href="https://projects.illc.uva.nl/indeep"
+            target="_blank"
+            rel="noreferrer"
+            className="font-mono text-[10px] tracking-[0.14em] text-ink-400 underline-offset-4 transition-colors hover:text-white hover:underline sm:text-[11px]"
+          >
+            {t("app.credit")}
+          </a>
+        </footer>
+      )}
     </main>
   );
 }
