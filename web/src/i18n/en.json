@@ -2,7 +2,8 @@
   "app": {
     "title": "ilcc-deepfake",
     "hook": "AI can do more every day. It can even speak in a voice you trust.",
-    "start": "Start your training"
+    "start": "Start your training",
+    "credit": "This demo is part of the Indeep project"
   },
   "common": {
     "listen": "Listen",
