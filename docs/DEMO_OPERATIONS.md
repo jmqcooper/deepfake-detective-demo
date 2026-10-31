@@ -36,6 +36,10 @@ run `docker compose restart web` and inspect
 `docker compose logs --tail=200 web`. The `stats-data` and `stats-backups`
 volumes survive container replacement.
 
+A container that keeps restarting with `[env] Invalid or missing: ...` in its log
+has a bad value in `.env`. The line names the keys; see
+[Secrets and environment](SECRETS.md).
+
 ## Statistics and privacy
 
 Create a consistent SQLite snapshot, then copy it out of the container:

@@ -1,0 +1,22 @@
+{
+  "accepted": {
+    "VOICE_CLONE_PORT": ["8765", " 8765 ", "+8765", "08765", "0", "65535", ""],
+    "VOICE_CLONE_SOCKET_FD": ["3", " 3 ", ""],
+    "VOICE_CLONE_DEVICE": ["auto", " CUDA ", "Mps", "cpu", ""],
+    "VOICE_CLONE_IDLE_SECONDS": ["600", " 600 ", "+600", "-5", "1_000", ""],
+    "VOICE_CLONE_EXIT_ON_IDLE": ["1", "0", "true", "FALSE", "Yes", "no", ""],
+    "VOICE_CLONE_EAGER": ["1", "0", "TRUE", "false", "yes", "NO", ""],
+    "VOICE_CLONE_REQUIRE_TOKEN": ["0", "false", "no", ""],
+    "VOICE_CLONE_TOKEN": ["c0ffee", "two words", "~!@#", ""]
+  },
+  "rejected": {
+    "VOICE_CLONE_PORT": ["abc", "8765x", "0x10", "1e3", "65536", "-1", "1_000"],
+    "VOICE_CLONE_SOCKET_FD": ["abc", "3x", "-1"],
+    "VOICE_CLONE_DEVICE": ["gpu", "cuda:0", "auto,cpu"],
+    "VOICE_CLONE_IDLE_SECONDS": ["abc", "600s", "1.5", "0x10", "_1", "1__0"],
+    "VOICE_CLONE_EXIT_ON_IDLE": ["on", "off", " true", "2"],
+    "VOICE_CLONE_EAGER": ["on", "enabled", "yes "],
+    "VOICE_CLONE_REQUIRE_TOKEN": ["on", "required"],
+    "VOICE_CLONE_TOKEN": ["café", " leading", "trailing ", "line\nbreak"]
+  }
+}

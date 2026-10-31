@@ -1,3 +1,4 @@
+import { varlockNextConfigPlugin } from "@varlock/nextjs-integration/plugin";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -9,4 +10,5 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
 };
 
-export default nextConfig;
+// The image supplies its values at boot, so nothing is frozen into the build.
+export default varlockNextConfigPlugin({ freezeIntoBundle: false })(nextConfig);

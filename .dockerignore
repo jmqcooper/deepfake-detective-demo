@@ -16,5 +16,6 @@ web/data/
 web/*.db
 web/*.db-shm
 web/*.db-wal
-web/.env*.local
+web/.env*
+!web/.env.schema
 web/npm-debug.log*

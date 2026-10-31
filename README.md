@@ -219,7 +219,10 @@ make dev
 
 This creates the normal local `.venv/`, installs web dependencies under
 `web/node_modules/`, uses the bundled curated media pack, and opens the Next.js
-development server at <http://localhost:3000>. Run all checks with:
+development server at <http://localhost:3000>. `npm run dev` checks the environment
+first and says so if this machine has no shared development store; local `.env`
+files work without one. See [Secrets and environment](docs/SECRETS.md). Run all
+checks with:
 
 ```bash
 make check
@@ -238,12 +241,14 @@ web/src/i18n/           Dutch and English copy
 web/src/lib/            shared contracts and tested logic
 tools/                  media pipeline and native voice service
 ops/                    demo deployment and maintenance
+web/.env.schema         every environment variable, for every process
 ```
 
 Operational documentation:
 
 - [Local voice cloning](docs/LOCAL_VOICE_CLONING.md)
 - [Demo operations](docs/DEMO_OPERATIONS.md)
+- [Secrets and environment](docs/SECRETS.md)
 - [Technical specification](SPEC.md)
 - [Contributing](CONTRIBUTING.md)
 

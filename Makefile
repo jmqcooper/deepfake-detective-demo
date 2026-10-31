@@ -1,5 +1,5 @@
 # Shortcuts for the tested local setup. See README.md.
-.PHONY: install samples dev test check check-runtime check-scripts release-check docker docker-check
+.PHONY: install samples dev voice-dev test check check-runtime check-scripts release-check docker docker-check
 
 SAMPLES := web/public/samples/manifest.json
 PYTHON ?= python3.12
@@ -11,7 +11,7 @@ VENV_DEPS := .venv/.deps
 STAMP := web/public/samples/.dev-fixture
 SAMPLE_SOURCES := tools/make_synthetic_dutch_fixture.py tools/prepare_samples.py
 PYTHON_SOURCES := $(shell git ls-files ':(glob)tools/**/*.py')
-SHELL_SOURCES := $(shell git ls-files ':(glob)tools/**/*.sh' ':(glob)ops/**/*.sh' ':(glob)install/**/*.sh' ':(glob)install/**/*.command')
+SHELL_SOURCES := $(shell git ls-files ':(glob)tools/**/*.sh' ':(glob)ops/**/*.sh' ':(glob)install/**/*.sh' ':(glob)install/**/*.command' ':(glob).githooks/*')
 NODE_SOURCES := $(shell git ls-files ':(glob)tools/**/*.mjs' ':(glob)ops/**/*.mjs')
 
 install: web/node_modules $(VENV_DEPS)
@@ -45,6 +45,11 @@ $(STAMP): $(SAMPLE_SOURCES) $(VENV_DEPS)
 
 dev: web/node_modules samples
 	cd web && npm run dev
+
+# A developer's voice service with values from the web contract. Installed hosts use
+# install/voice-*, which needs no Node.
+voice-dev: web/node_modules
+	cd web && npm run voice:dev
 
 check-runtime: web/node_modules
 	node tools/check_runtime.mjs

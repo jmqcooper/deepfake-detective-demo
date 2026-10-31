@@ -30,7 +30,10 @@ RUN npm ci \
 
 FROM node:22-bookworm-slim AS builder
 WORKDIR /app
-ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    VARLOCK_TELEMETRY_DISABLED=true \
+    ILCC_ENV_PROFILE=production \
+    ILCC_SHARED_SECRETS=off
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY web/ .
 COPY --from=sample-pack /out ./public/samples
@@ -40,6 +43,9 @@ FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
+    VARLOCK_TELEMETRY_DISABLED=true \
+    ILCC_ENV_PROFILE=installed \
+    ILCC_SHARED_SECRETS=off \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
     DATABASE_PATH=/app/data/stats.db \
@@ -54,9 +60,15 @@ COPY --from=builder --chown=node:node /app/public ./public
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 COPY --chown=node:node ops/stats-maintenance.mjs ./ops/stats-maintenance.mjs
+# Standalone tracing leaves out what the startup check needs: the contract and the CLI.
+COPY --from=builder --chown=node:node /app/.env.schema ./.env.schema
+COPY --from=builder --chown=node:node /app/scripts/env ./scripts/env
+COPY --from=builder --chown=node:node /app/node_modules/varlock/package.json ./node_modules/varlock/package.json
+COPY --from=builder --chown=node:node /app/node_modules/varlock/bin ./node_modules/varlock/bin
+COPY --from=builder --chown=node:node /app/node_modules/varlock/dist ./node_modules/varlock/dist
 
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 \
   CMD ["node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
-CMD ["node", "server.js"]
+CMD ["node", "scripts/env/start-image.mjs"]
