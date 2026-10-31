@@ -143,7 +143,10 @@ export function workspace(): Workspace {
 }
 
 /** A fake Infisical that answers Universal Auth and the raw secrets call. */
-export async function mockStore(secrets: Record<string, string>, refuse = false) {
+export async function mockStore(
+  secrets: Record<string, string> | (() => Record<string, string>),
+  refuse = false,
+) {
   const calls: string[] = [];
   const server = createServer((request, response) => {
     const path = request.url ?? "";
@@ -165,8 +168,9 @@ export async function mockStore(secrets: Record<string, string>, refuse = false)
       return reply(401, { message: "unauthorized" });
     }
     if (path.startsWith("/api/v3/secrets/raw")) {
+      const stored = typeof secrets === "function" ? secrets() : secrets;
       return reply(200, {
-        secrets: Object.entries(secrets).map(([secretKey, secretValue]) => ({ secretKey, secretValue })),
+        secrets: Object.entries(stored).map(([secretKey, secretValue]) => ({ secretKey, secretValue })),
         imports: [],
       });
     }
