@@ -89,6 +89,11 @@ On Windows PowerShell, activate it with
 Start `make dev` in a second terminal. Both processes use
 `http://127.0.0.1:8765` automatically.
 
+`make voice-dev` starts the same service with the development values from
+`web/.env.local` and the shared store, so a token set there pairs both processes.
+It needs Node and is for development only. See
+[Secrets and environment](SECRETS.md).
+
 Wake it, then wait for readiness:
 
 ```bash

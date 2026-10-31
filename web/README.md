@@ -12,13 +12,16 @@ for where changes belong. The hand-selected Dutch/English sample pack in
 
 ```bash
 npm ci
-npm run dev     # http://localhost:3000
+npm run dev     # http://localhost:3000, after an environment check
 npm run lint
 npm run build
 ```
 
 Layout: `src/app/` pages + API routes · `src/components/stations/` the station UIs ·
 `src/i18n/{nl,en}.json` all copy · `src/lib/` manifest loader, stats, SQLite.
+
+`.env.schema` declares every environment variable. Local values go in `.env.local`.
+See [Secrets and environment](../docs/SECRETS.md).
 
 > **Next.js 16 has breaking changes from older versions.** Read `AGENTS.md` before
 > writing app code.

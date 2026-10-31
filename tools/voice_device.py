@@ -3,6 +3,14 @@
 from __future__ import annotations
 
 
+def requested_device(preference: str) -> str:
+    """Normalize a device setting, refusing one the service could never use."""
+    requested = preference.strip().lower()
+    if requested not in {"auto", "cuda", "mps", "cpu"}:
+        raise ValueError("VOICE_CLONE_DEVICE must be auto, cuda, mps, or cpu")
+    return requested
+
+
 def resolve_device(
     preference: str,
     *,
@@ -10,9 +18,7 @@ def resolve_device(
     mps_available: bool,
 ) -> str:
     """Resolve ``auto`` or a requested PyTorch device without OS assumptions."""
-    requested = preference.strip().lower()
-    if requested not in {"auto", "cuda", "mps", "cpu"}:
-        raise ValueError("VOICE_CLONE_DEVICE must be auto, cuda, mps, or cpu")
+    requested = requested_device(preference)
 
     if requested == "auto":
         if cuda_available:

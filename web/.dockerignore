@@ -9,5 +9,6 @@ data
 *.db
 *.db-shm
 *.db-wal
-.env*.local
+.env*
+!.env.schema
 npm-debug.log*

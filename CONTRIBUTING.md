@@ -22,6 +22,7 @@ plus an offline media pipeline.
 | Any user-visible text | `web/src/i18n/nl.json` **and** `web/src/i18n/en.json` |
 | API routes / stats / SQLite | `web/src/app/api/`, `web/src/lib/` |
 | The sample pack / manifest format | `tools/prepare_samples.py`, `web/src/lib/manifest-schema.ts` + [SPEC.md](SPEC.md) |
+| Any environment variable | `web/.env.schema` first, see [docs/SECRETS.md](docs/SECRETS.md) |
 
 ## Required checks
 
@@ -30,8 +31,8 @@ cd web && npm run check     # lint + typecheck + tests + production build
 .venv/bin/python tools/prepare_samples.py --out web/public/samples --verify-only
 ```
 
-Or `make check`. The individual steps are `npm run lint`, `npm run typecheck`,
-`npm test` and `npm run build`; `npm run e2e` exercises the API over HTTP against a
+Or `make check`. The individual steps are `npm run lint`, `npm run check:env`,
+`npm run typecheck`, `npm test` and `npm run build`; `npm run e2e` exercises the API over HTTP against a
 running app. The root `make check` starts a production server and includes that
 HTTP suite, while `npm run check` remains the in-process web check.
 
@@ -63,10 +64,12 @@ thin and the contracts are not.
   show the failure.
 - **Next.js 16 differs from older versions.** Check `web/AGENTS.md` before writing app
   code.
+- **Declare a variable before reading it.** `npm run check:env` fails on an undeclared
+  read. The pre-commit hook scans staged content for secrets; `npm ci` turns it on.
 
 ## PR checklist
 
-- [ ] `npm run check` passes (lint, typecheck, tests, build).
+- [ ] `npm run check` passes (lint, env audit, typecheck, tests, build).
 - [ ] Samples verify (`--verify-only`), or the change doesn't touch the pipeline.
 - [ ] New/changed copy is in both `nl.json` and `en.json`, with matching placeholders.
 - [ ] The flow still fits a 320 px viewport with no horizontal scroll.

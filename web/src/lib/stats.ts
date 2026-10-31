@@ -407,7 +407,7 @@ class MemoryDriver implements StatsDriver {
   recordEvent(event: DemoEvent): void {
     const stored = { ...event, recordedAt: new Date() } as MemoryEvent;
     if (event.type === "guess") {
-      const key = `${event.sessionId} ${event.clipId}`;
+      const key = `${event.sessionId}\0${event.clipId}`;
       if (this.guesses.has(key)) {
         return;
       }

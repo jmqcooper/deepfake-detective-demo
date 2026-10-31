@@ -37,11 +37,13 @@ try:
         validate_token_configuration,
     )
     from tools.on_demand import OnDemandResource, ResourceNotReady
-    from tools.voice_device import resolve_device
+    from tools.voice_device import requested_device, resolve_device
+    from tools.voice_settings import read_settings
 except ModuleNotFoundError:  # Supports `python tools/voice_clone_service.py` too.
     from internal_auth import bearer_token_matches, validate_token_configuration
     from on_demand import OnDemandResource, ResourceNotReady
-    from voice_device import resolve_device
+    from voice_device import requested_device, resolve_device
+    from voice_settings import read_settings
 
 CHATTERBOX_REPO = "ResembleAI/chatterbox"
 CHATTERBOX_REVISION = "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18"
@@ -64,19 +66,14 @@ GENERATION_PROFILES = {
     "en": {"seed": 3407, "temperature": 0.7, "cfg_weight": 0.5},
 }
 logger = logging.getLogger("uvicorn.error")
-idle_seconds = max(30, int(os.getenv("VOICE_CLONE_IDLE_SECONDS", "600")))
-exit_on_idle = os.getenv("VOICE_CLONE_EXIT_ON_IDLE", "0").lower() in {
-    "1",
-    "true",
-    "yes",
-}
+settings = read_settings()
+requested_device(settings.device)
+idle_seconds = settings.idle_seconds
+exit_on_idle = settings.exit_on_idle
 loaded_device: str | None = None
 last_load_seconds: float | None = None
-internal_token = os.getenv("VOICE_CLONE_TOKEN")
-validate_token_configuration(
-    internal_token,
-    os.getenv("VOICE_CLONE_REQUIRE_TOKEN", "0").lower() in {"1", "true", "yes"},
-)
+internal_token = settings.token
+validate_token_configuration(internal_token, settings.require_token)
 clone_slot = threading.BoundedSemaphore(1)
 
 
@@ -203,7 +200,7 @@ def load_models() -> ModelBundle:
 
     try:
         device = resolve_device(
-            os.getenv("VOICE_CLONE_DEVICE", "auto"),
+            settings.device,
             cuda_available=torch.cuda.is_available(),
             mps_available=torch.backends.mps.is_available(),
         )
@@ -219,7 +216,7 @@ def load_models() -> ModelBundle:
                     "conds.pt",
                     "Cangjie5_TC.json",
                 ],
-                token=os.getenv("HF_TOKEN"),
+                token=settings.huggingface_token,
             )
         )
         clone_model = load_clone_model(checkpoint, device, torch)
@@ -298,7 +295,7 @@ async def lifespan(_: FastAPI):
         name="voice-model-idle-monitor",
         daemon=True,
     ).start()
-    if os.getenv("VOICE_CLONE_EAGER", "0").lower() in {"1", "true", "yes"}:
+    if settings.eager:
         models.wake()
     yield
     stop_idle_monitor.set()
@@ -504,11 +501,4 @@ async def clone(
 if __name__ == "__main__":
     import uvicorn
 
-    if socket_fd := os.getenv("VOICE_CLONE_SOCKET_FD"):
-        uvicorn.run(app, fd=int(socket_fd))
-    else:
-        uvicorn.run(
-            app,
-            host=os.getenv("VOICE_CLONE_HOST", "127.0.0.1"),
-            port=int(os.getenv("VOICE_CLONE_PORT", "8765")),
-        )
+    uvicorn.run(app, **settings.listen)

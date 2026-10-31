@@ -42,6 +42,8 @@ __pycache__/
 .env
 .env.*
 !.env.example
+!.env.schema
+!.env.infisical
 
 # Local editor and coding-assistant metadata
 .vscode/

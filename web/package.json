@@ -4,21 +4,31 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build --webpack",
-    "start": "next start",
+    "dev": "node scripts/env/preflight.mjs && next dev",
+    "build": "node scripts/env/preflight.mjs --profile production && next build --webpack",
+    "start": "node scripts/env/preflight.mjs --profile production && next start",
     "lint": "eslint",
+    "check:env": "varlock audit src tests scripts ../ops ../tools ../install",
     "typecheck": "tsc --noEmit",
     "test": "node --import ./tests/loader.mjs --test \"tests/*.test.ts\"",
     "test:watch": "node --import ./tests/loader.mjs --test --watch \"tests/*.test.ts\"",
     "e2e": "node --import ./tests/loader.mjs --test \"tests/e2e/*.test.ts\"",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run build"
+    "check": "npm run lint && npm run check:env && npm run typecheck && npm run test && npm run build",
+    "voice:dev": "node scripts/env/preflight.mjs --filter '#voice' && varlock run --filter '#voice' -- sh -c 'cd .. && exec .venv-voice/bin/python -m tools.voice_clone_service'",
+    "agent:proxy": "varlock proxy run --",
+    "prepare": "git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git config core.hooksPath .githooks || true"
+  },
+  "varlock": {
+    "loadPath": "./",
+    "filter": "#web"
   },
   "dependencies": {
+    "@varlock/nextjs-integration": "2.0.0",
     "better-sqlite3": "^12.4.1",
     "next": "16.2.11",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "varlock": "1.24.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -26,6 +36,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@varlock/infisical-plugin": "2.1.3",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",
     "tailwindcss": "^4",
@@ -33,6 +44,9 @@
   },
   "overrides": {
     "postcss": "^8.5.21",
-    "sharp": "^0.35.3"
+    "sharp": "^0.35.3",
+    "next": {
+      "@next/env": "npm:@varlock/nextjs-integration@2.0.0"
+    }
   }
 }
