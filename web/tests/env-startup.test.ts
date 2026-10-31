@@ -51,6 +51,71 @@ describe("npm run dev", () => {
   });
 });
 
+describe("the environment Next actually starts with", () => {
+  const prefix = "ILCC_NEXT_ENV_PROBE:";
+  const probe = (app: string) => writeFileSync(join(app, "next.config.mjs"), `
+console.log(${JSON.stringify(prefix)} + JSON.stringify({
+  profile: process.env.ILCC_ENV_PROFILE,
+  store: process.env.ILCC_SHARED_SECRETS,
+  driver: process.env.STATS_DRIVER,
+  inherited: Object.keys(process.env).filter((key) => key === "__VARLOCK_PARENT_PROBE"),
+  args: process.argv.slice(2),
+}));
+throw new Error("Intentional stop after observing Next's loaded environment");
+export default {};
+`);
+  const observed = (stdout: string) => {
+    const line = stdout.split("\n").find((line) => line.startsWith(prefix));
+    assert.ok(line, "Next must load the fixture config after its environment loader");
+    return JSON.parse(line.slice(prefix.length));
+  };
+
+  for (const mode of ["build", "start"]) {
+    const args = mode === "start" ? ["run", mode, "--", "-p", "0"] : ["run", mode];
+
+    test(`${mode} keeps the actual Next process off the development store`, async (t) => {
+      const store = await mockStore({ STATS_DRIVER: "memory" });
+      t.after(store.close);
+      const space = workspace();
+      t.after(space.cleanup);
+      space.addIdentity();
+      probe(space.app);
+      const result = await space.npm(args, {
+        ILCC_ENV_PROFILE: "development",
+        ILCC_SHARED_SECRETS: "infisical",
+        INFISICAL_SITE_URL: store.url,
+      });
+      const next = observed(result.stdout);
+      assert.deepEqual(store.calls, []);
+      assert.equal(next.profile, "production");
+      assert.equal(next.store, "off");
+      assert.ok(next.args.includes(mode));
+      assert.ok(next.args.includes(mode === "build" ? "--webpack" : "-p"));
+      if (mode === "start") assert.ok(next.args.includes("0"));
+    });
+
+    test(`${mode} uses the newly checked backend instead of an inherited blob`, async (t) => {
+      const space = workspace();
+      t.after(space.cleanup);
+      probe(space.app);
+      const memory = await space.varlock(["load", "--format", "json-full", "--compact", "--filter", "#web"], {
+        NODE_ENV: "production",
+        STATS_DRIVER: "memory",
+      });
+      assert.equal(memory.status, 0, memory.stderr);
+      const result = await space.npm(args, {
+        NODE_ENV: "production",
+        STATS_DRIVER: "sqlite",
+        __VARLOCK_ENV: memory.stdout,
+        __VARLOCK_PARENT_PROBE: "inherited",
+      });
+      const next = observed(result.stdout);
+      assert.equal(next.driver, "sqlite");
+      assert.deepEqual(next.inherited, []);
+    });
+  }
+});
+
 describe("the check before a process starts", () => {
   test("names keys and prints no value, even with two secrets involved", async (t) => {
     const space = workspace();

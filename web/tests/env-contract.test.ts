@@ -234,6 +234,17 @@ describe("undeclared variables", () => {
     assert.equal(result.status, 0, result.stderr);
   });
 
+  const auditModes: Record<string, Record<string, string>> = { ci: { CI: "true" }, offline: { ILCC_SHARED_SECRETS: "off" } };
+  for (const [mode, values] of Object.entries(auditModes)) {
+    test(`the audit works with the optional identity config disabled in ${mode}`, async (t) => {
+      const local = workspace();
+      t.after(local.cleanup);
+      const [, ...targets] = auditScript().replace(/^varlock /, "").split(" ");
+      const result = await run(VARLOCK, ["audit", ...targets], { cwd: WEB_ROOT, env: sealedEnv(local.home, values) });
+      assert.equal(result.status, 0, result.stderr);
+    });
+  }
+
   test("the audit catches a new read in JavaScript, Python and shell", async (t) => {
     const name = "NEW_SETTING";
     const reads: Record<string, string> = {

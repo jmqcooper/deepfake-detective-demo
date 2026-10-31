@@ -93,16 +93,36 @@ function reportStore(graph) {
 }
 
 async function main() {
-  const { values } = parseArgs({
-    options: { filter: { type: "string" }, profile: { type: "string" } },
+  const { values, positionals } = parseArgs({
+    options: { filter: { type: "string" }, profile: { type: "string" }, next: { type: "string" } },
+    allowPositionals: true,
   });
-  const overrides = values.profile ? { ILCC_ENV_PROFILE: values.profile } : {};
+  if (values.next && !["dev", "build", "start"].includes(values.next)) {
+    console.error("[env] Unsupported Next command.");
+    process.exit(1);
+  }
+  const overrides = {
+    ...(values.profile ? { ILCC_ENV_PROFILE: values.profile } : {}),
+    ...(values.next ? { NODE_ENV: process.env.NODE_ENV ?? (values.next === "dev" ? "development" : "production") } : {}),
+    ...(values.next && values.next !== "dev" ? { ILCC_ENV_PROFILE: "production", ILCC_SHARED_SECRETS: "off" } : {}),
+  };
   const result = await checkEnv({ filter: values.filter, overrides });
   if (result.problem) {
     console.error(`[env] ${result.problem}`);
     process.exit(1);
   }
   reportStore(result.graph);
+  if (values.next) {
+    // Next must use this check's values, not a parent's injected environment.
+    for (const key of Object.keys(process.env)) {
+      if (VARLOCK_METADATA.test(key)) delete process.env[key];
+    }
+    Object.assign(process.env, overrides, { __VARLOCK_ENV: result.blob, VARLOCK_TELEMETRY_DISABLED: "true" });
+    const cli = join(WEB_ROOT, "node_modules/next/dist/bin/next");
+    process.chdir(WEB_ROOT);
+    process.argv = [process.execPath, cli, values.next, ...positionals];
+    await import(pathToFileURL(cli).href);
+  }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

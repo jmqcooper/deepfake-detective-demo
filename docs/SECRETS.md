@@ -27,6 +27,10 @@ downloaded archives leave out `web/.env.infisical`.
 Nothing about voice cloning is required in any profile. Without a live voice service
 the app hides the cloning station, as it always has.
 
+The npm commands start Next with the values preflight just validated, discarding
+inherited Varlock metadata. Both the check and Next use the production profile with
+the shared store off for `build` and `start`, even when a parent set a development profile.
+
 A bad image environment stops the container before the server starts. The log names
 the keys and prints no values:
 
@@ -82,8 +86,9 @@ checks that each process's readers carry its tag.
 - Check numbers and flags with an anchored regular expression, as the existing entries
   do. Varlock's `number` type passes `90days` as 90, and its `boolean` type accepts
   words the readers do not.
-- Add `@sensitive=false` to anything that can appear in logs or responses. Everything
-  else is secret by default, and a build fails when a secret reaches a page or a chunk.
+- Add `@sensitive=false` to public values that can appear in logs or responses.
+  Everything else is secret by default. Keep secrets out of rendered components:
+  the build scan does not cover every prerendered HTML or RSC output.
 - A value the voice service reads also goes in `tools/tests/voice-env-cases.json`, which
   the schema and the Python readers both have to pass.
 - Add `@required=forEnv(installed)` only if an exhibit truly cannot run without it,

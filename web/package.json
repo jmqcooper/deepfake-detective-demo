@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node scripts/env/preflight.mjs && next dev",
-    "build": "node scripts/env/preflight.mjs --profile production && next build --webpack",
-    "start": "node scripts/env/preflight.mjs --profile production && next start",
+    "dev": "node scripts/env/preflight.mjs --next dev --",
+    "build": "node scripts/env/preflight.mjs --next build -- --webpack",
+    "start": "node scripts/env/preflight.mjs --next start --",
     "lint": "eslint",
     "check:env": "varlock audit src tests scripts ../ops ../tools ../install",
     "typecheck": "tsc --noEmit",
