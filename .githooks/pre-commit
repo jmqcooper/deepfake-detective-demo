@@ -17,11 +17,15 @@ git diff --cached --name-only -z --diff-filter=ACMRT >"$index_copy/paths"
 mkdir "$index_copy/files"
 git checkout-index -z --stdin --prefix="$index_copy/files/" <"$index_copy/paths"
 
-# Its report can print a second secret from the same line, so only the status is used.
-(cd web && VARLOCK_TELEMETRY_DISABLED=true node_modules/.bin/varlock scan "$index_copy/files") >/dev/null 2>&1 || fail
+# Varlock's report can print a second secret from the same line, so only the status is used.
+node web/scripts/scan-staged.mjs "$index_copy" >/dev/null 2>&1 || fail
 
 # The installed web-to-voice token lives in the root .env, which the schema never loads.
-sed -n 's/^VOICE_CLONE_TOKEN=//p' .env 2>/dev/null | tail -n 1 | tr -d '\r' >"$index_copy/token"
-if [ -s "$index_copy/token" ] && grep -rqFf "$index_copy/token" "$index_copy/files"; then
-  fail
+# This comes after the proxy check. grep also reads the files Varlock skips, and the pipe
+# keeps the token out of any file or argument.
+token="$(sed -n 's/^VOICE_CLONE_TOKEN=//p' .env 2>/dev/null | tail -n 1 | tr -d '\r')"
+if [ -n "$token" ]; then
+  found=0
+  printf '%s\n' "$token" | grep -rqFf - "$index_copy/files" || found=$?
+  [ "$found" -eq 1 ] || fail
 fi

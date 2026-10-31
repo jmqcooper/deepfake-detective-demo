@@ -122,9 +122,28 @@ make voice-dev
 
 `npm ci` turns on `.githooks/pre-commit`. The hook copies the staged files out of the Git
 index into a private folder under `/tmp`, scans that copy and removes it, so it checks
-what the commit will hold. It also looks for the installed token from the root `.env`,
-which the schema never loads. Varlock's report can print the values it finds, so the hook
+what the commit will hold. Varlock's report can print the values it finds, so the hook
 hides it and prints one fixed line.
+
+`web/scripts/scan-staged.mjs` runs the scan, and any step below can stop the commit:
+
+1. `web/.env.schema` must exist and declare something.
+2. The scan refuses to run in a credential proxy, whose values are placeholders. It checks
+   with a generated schema of one public value before it reads anything private, so
+   clearing the proxy's variables changes nothing.
+3. It loads the whole contract once, including internal values such as the store's client
+   secret. A secret that did not resolve stops the commit, and so does a refused or
+   unreachable store. An invalid public value does not, unless another item's rules depend
+   on it. Varlock then cannot say whether that item is sensitive. `npm run dev` names a bad
+   `#web` key.
+4. It gives those values to `varlock scan` in the environment of that one process, with a
+   generated schema of blank names. The scan reads no source again, and no value reaches
+   a file or an argument.
+
+The hook then looks for the installed token from the root `.env`, which the schema never
+loads. It uses `grep`, which also reads the files Varlock skips, such as a binary or a
+`.png` path. Like the installers, it takes the last `VOICE_CLONE_TOKEN=` line. The token
+reaches `grep` on a pipe, and a blank token means there is nothing to look for.
 
 With an identity on the machine the scan reads the store, which needs the network and,
 on a Mac, Touch ID. Commit with `ILCC_SHARED_SECRETS=off` when offline. That scan covers
@@ -148,6 +167,7 @@ and Codex traffic passes through untouched and they keep their own sign-in.
 - The agent has no real voice token, so it cannot authenticate to a voice service that
   needs one. Start the web app and the voice service from a normal terminal beside the agent.
 - The script wraps a terminal launch. A session started by a host app is not wrapped.
+- The pre-commit scan refuses to run under the proxy. Commit from a normal terminal.
 
 ## Test fixtures
 
